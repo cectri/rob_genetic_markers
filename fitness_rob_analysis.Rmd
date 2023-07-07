@@ -1,0 +1,77 @@
+---
+title: "Fitness_analysis"
+author: "Cecilia Trivellin"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analysis of the genetic markers of microbial robustness
+
+This script is used to analyse fitness data of Saccharomyces cerevisiae strains. Each strain carries a deletion that should confer either lower or higher robusntess. The genes that have been deleted are the following: 
+
+1)	CEN.PK113-7D (ΔQDR1)
+2)	CEN.PK113-7D (ΔGBP2)
+3)	CEN.PK113-7D (ΔMRP13)
+4)	CEN.PK113-7D (ΔWWM)
+5)	CEN.PK113-7D (ΔHCM1)
+6)	CEN.PK113-7D (ΔOCA4)
+7)	CEN.PK113-7D (ΔRPS14A) 
+8)	CEN.PK113-7D (ΔSMA2) 
+9)	CEN.PK113-7D (ΔMSH3) 
+10)	CEN.PK113-7D (ΔRPS14B) 
+11)	CEN.PK113-7D (ΔMET28) 
+12)	CEN.PK113-7D (ΔBCH1)
+13)	CEN.PK113-7D (ΔTIR3) 
+14)	CEN.PK113-7D (ΔHLJ1) 
+
+The strains above were grown in three different perturbation spaces. THe first one containing the following perturbations: 
+
+Delft
+Delft_80NaCl
+Delft_50etoh
+Delft_25NaCl
+Delft-05VM
+Delft_100glu
+Dleft_100etoh
+Delft_5glu
+Delft_NB
+Delft_10LA
+Delft_HMF1
+Delft_FA2
+Delft_pH3
+Delft_AA2
+SCH100
+eSSH20
+
+## Importing data and summary 
+```{r}
+library(readxl)
+summary <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition.xlsx", 
+    sheet = "summary")
+
+QDR1_GBP2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
+    sheet = "QDR1-GBP2_GV")
+
+MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
+    sheet = "MRP13-WWM1_GV")
+
+
+HCM1_PCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
+    sheet = "MRP13-WWM1_GV")
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
