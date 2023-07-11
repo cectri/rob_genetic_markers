@@ -27,6 +27,8 @@ This script is used to analyse fitness data of Saccharomyces cerevisiae strains.
 12)	CEN.PK113-7D (ΔBCH1)
 13)	CEN.PK113-7D (ΔTIR3) 
 14)	CEN.PK113-7D (ΔHLJ1) 
+15) CEN.PK113-7D parental
+16) Ethanol Red
 
 The strains above were grown in three different perturbation spaces. THe first one containing the following perturbations: 
 
@@ -47,31 +49,176 @@ Delft_AA2
 SCH100
 eSSH20
 
-## Importing data and summary 
+### Loading libraries
 ```{r}
 library(readxl)
-summary <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition.xlsx", 
-    sheet = "summary")
+library(tidyverse)
+library(deSolve)
+library(growthrates)
+```
+
+## Importing data and summary 
+```{r}
+summary <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_LHFEPP.xlsx", 
+    sheet = "summary") 
+
+strain <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_LHFEPP.xlsx", 
+    sheet = "strain") 
+
 
 QDR1_GBP2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
-    sheet = "QDR1-GBP2_GV")
+    sheet = "QDR1-GBP2_GV") %>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
 
 MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
-    sheet = "MRP13-WWM1_GV")
+    sheet = "MRP13-WWM1_GV")%>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
 
 
 HCM1_PCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
-    sheet = "MRP13-WWM1_GV")
+    sheet = "MRP13-WWM1_GV")%>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
 
+RPS14A_SMA2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part2.xlsx", 
+    sheet = "RPS14A-SMA2_GV")%>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
+
+MSH3_RPS14B <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part2.xlsx", 
+    sheet = "MSH3-RPS14B_GV")%>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
+
+BCH1_MET28 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part2.xlsx", 
+    sheet = "BCH1-MET28_GV")%>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
+
+HLJ1_ETRED <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part3.xlsx", 
+    sheet = "HLJ1-ETRED_GV")%>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
+
+TIR3_CENPK <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part3.xlsx", 
+    sheet = "TIR3-CENPK_GV") %>%
+    mutate(timeh = `time`/60) %>%
+    select(-`time`)%>%
+    gather("well", "value", -timeh) 
+```
+## Preprocessing growth data 
+```{r}
+ss_df <- function(df1, df2, df3, coln) {
+  tmp <- inner_join(df1, df2, by="well")
+  merge(tmp, df3[, c("well", coln)], by="well",all.x=TRUE)%>%
+  group_by(media, timeh) %>%
+  mutate(log_value=log(value)) %>%
+  mutate(mean=mean(log_value)) %>%
+  mutate(stdev=sd(log_value)) 
+  # filter(replicate == 1) 
+}
+QDR1_GBP2 <- ss_df(QDR1_GBP2, summary, strain, "plate1") %>%
+  rename(strain=plate1)
+MRP13_WWM1 <- ss_df(MRP13_WWM1, summary, strain, "plate2")%>%
+  rename(strain=plate2)
+HCM1_PCA4 <- ss_df(HCM1_PCA4, summary, strain, "plate3")%>%
+  rename(strain=plate3)
+RPS14A_SMA2 <- ss_df(RPS14A_SMA2, summary, strain, "plate4")%>%
+  rename(strain=plate4)
+MSH3_RPS14B <- ss_df(MSH3_RPS14B, summary, strain, "plate5")%>%
+  rename(strain=plate5)
+BCH1_MET28 <- ss_df(BCH1_MET28, summary, strain, "plate6")%>%
+  rename(strain=plate6)
+HLJ1_ETRED <- ss_df(HLJ1_ETRED, summary, strain, "plate7")%>%
+  rename(strain=plate7)
+TIR3_CENPK <- ss_df(TIR3_CENPK, summary, strain, "plate8")%>%
+  rename(strain=plate8)
+
+df <- QDR1_GBP2 %>%
+  rbind(MRP13_WWM1) %>%
+  rbind(HCM1_PCA4) %>%
+  rbind(RPS14A_SMA2)%>%
+  rbind(MSH3_RPS14B)%>%
+  rbind(BCH1_MET28) %>%
+  rbind(HLJ1_ETRED) %>%
+  rbind(TIR3_CENPK) 
 
 ```
+## Checking growth curves with plots
+```{r}
+df <- df %>%
+  mutate(replicate= as.character(replicate)) 
+ggplot() +
+  geom_point(data = subset(df, strain == c("HLJ1", "ETRED","TIR3", "CENPK")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
+scale_colour_brewer(palette = "Spectral") +
+  labs(y = "log_GV", x = "time(h)")+
+  facet_wrap(~media)  +
+  bbc_style()
 
-## Including Plots
+# ggsave("part3_growtcurves.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+```
+## calculation of growth rate and lag phase 
+```{r}
+many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate,
+                                data = df, spar = 0.7)
+par(mfrow = c(6,6))
+par(mar=c(1,1,1,1))
+plot(many_spline_fits)
+#data frame is created with the results coming from all_splines function
+results <- results(many_spline_fits)
+  # filter(r2 >= 0.98)%>%
+  # select(-`y0`)
 
-You can also embed plots, for example:
+ggplot(data= results, 
+      aes(x = strain,
+          y = mumax, fill = strain)
+    ) +
+    geom_violin(width=0.9,alpha = 0.7) +
+    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA)+
+    # scale_fill_distiller(palette = "Spectral") +
+    # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
+    bbc_style()+
+    theme(strip.text = element_text(face="bold"),
+        text = element_text(size = 15),
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## robusntess calculations 
+```{r}
+df_mean <- results %>%
+  group_by(strain,replicate) %>% #calculating mean for each sample in the agar plate 
+  mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
+  mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
+  filter(media == "Delft" ) 
+mean_mumax <- mean(df_mean$mean) 
+
+df_R <- df_mean %>%
+  mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
+  mutate(robustness_n=robustness/mean_mumax, na.rm=TRUE) %>%#calculating normalized robustness with the mean of all strains and all experiments
+  group_by(strain) %>%
+  mutate(mean_R=mean(robustness_n, na.rm=TRUE)) %>% #mean of the 4 replicates per sample coming from the 4 different plates
+  mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) #standard error = standard deviation of the sampling distribution/sqrt n of samples
+```
+## plotting robusntess 
+```{r}
+ggplot(data = subset(df_R, replicate == 1)) +
+  geom_bar(aes(x=strain, y=mean_R, fill=strain), stat="identity") +
+  geom_errorbar(aes(x=strain, ymin=mean_R-sem_R, ymax=mean_R+sem_R), width=0.05, colour="black", alpha=0.9, size=0.5)+
+  bbc_style()+
+    theme(strip.text = element_text(face="bold"),
+        text = element_text(size = 15),
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
+ggsave("robusntess_LHPS.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+```
+
