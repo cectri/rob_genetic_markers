@@ -66,50 +66,50 @@ strain <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_
     sheet = "strain") 
 
 
-QDR1_GBP2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
+QDR1_GBP2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part1.xlsx", 
     sheet = "QDR1-GBP2_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
+MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part1.xlsx", 
     sheet = "MRP13-WWM1_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
 
-HCM1_PCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part1.xlsx", 
-    sheet = "MRP13-WWM1_GV")%>%
+HCM1_OCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part1.xlsx", 
+    sheet = "HCM1-PCA4_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-RPS14A_SMA2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part2.xlsx", 
+RPS14A_SMA2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part2.xlsx", 
     sheet = "RPS14A-SMA2_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MSH3_RPS14B <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part2.xlsx", 
+MSH3_RPS14B <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part2.xlsx", 
     sheet = "MSH3-RPS14B_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-BCH1_MET28 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part2.xlsx", 
+BCH1_MET28 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part2.xlsx", 
     sheet = "BCH1-MET28_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-HLJ1_ETRED <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part3.xlsx", 
+HLJ1_ETRED <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part3.xlsx", 
     sheet = "HLJ1-ETRED_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-TIR3_CENPK <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHFEPP_part3.xlsx", 
+TIR3_CENPK <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part3.xlsx", 
     sheet = "TIR3-CENPK_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
@@ -130,7 +130,7 @@ QDR1_GBP2 <- ss_df(QDR1_GBP2, summary, strain, "plate1") %>%
   rename(strain=plate1)
 MRP13_WWM1 <- ss_df(MRP13_WWM1, summary, strain, "plate2")%>%
   rename(strain=plate2)
-HCM1_PCA4 <- ss_df(HCM1_PCA4, summary, strain, "plate3")%>%
+HCM1_OCA4 <- ss_df(HCM1_OCA4, summary, strain, "plate3")%>%
   rename(strain=plate3)
 RPS14A_SMA2 <- ss_df(RPS14A_SMA2, summary, strain, "plate4")%>%
   rename(strain=plate4)
@@ -145,7 +145,7 @@ TIR3_CENPK <- ss_df(TIR3_CENPK, summary, strain, "plate8")%>%
 
 df <- QDR1_GBP2 %>%
   rbind(MRP13_WWM1) %>%
-  rbind(HCM1_PCA4) %>%
+  rbind(HCM1_OCA4) %>%
   rbind(RPS14A_SMA2)%>%
   rbind(MSH3_RPS14B)%>%
   rbind(BCH1_MET28) %>%
@@ -174,24 +174,28 @@ par(mfrow = c(6,6))
 par(mar=c(1,1,1,1))
 plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
-results <- results(many_spline_fits)
-  # filter(r2 >= 0.98)%>%
-  # select(-`y0`)
+results <- results(many_spline_fits) %>%
+  filter(r2 >= 0.98)%>%
+  select(-`y0`)
 
-ggplot(data= results, 
+results <- results %>%
+  mutate(replicate= as.character(replicate)) %>%
+  mutate(strain = factor(strain,levels=c("QDR1","MET28","MRP13","HCM1","GBP2","RPS14A","RPS14B","OCA4","MSH3", "BCH1", "WWM1","HLJ1", "TIR3", "SMA2", "CENPK", "ETRED"))) 
+
+  ggplot(data= results, 
       aes(x = strain,
           y = mumax, fill = strain)
     ) +
     geom_violin(width=0.9,alpha = 0.7) +
-    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA)+
-    # scale_fill_distiller(palette = "Spectral") +
+    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA, aes(middle=mean(mumax)))+
+    scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
     bbc_style()+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-# ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+# ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 
 ## robusntess calculations 
@@ -212,13 +216,14 @@ df_R <- df_mean %>%
 ```
 ## plotting robusntess 
 ```{r}
-ggplot(data = subset(df_R, replicate == 1)) +
-  geom_bar(aes(x=strain, y=mean_R, fill=strain), stat="identity") +
-  geom_errorbar(aes(x=strain, ymin=mean_R-sem_R, ymax=mean_R+sem_R), width=0.05, colour="black", alpha=0.9, size=0.5)+
+ggplot(df_R,aes(x=strain, y=robustness_n, fill=strain)) +
+  geom_boxplot(outlier.shape=NA, aes(middle=mean(mumax)))+
+  scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
   bbc_style()+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
-        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-ggsave("robusntess_LHPS.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))+
+    labs(x= "strains", y="Robusntess of µmax")
+# ggsave("robusntess_LHPS_098cut.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 
