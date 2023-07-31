@@ -55,6 +55,7 @@ library(readxl)
 library(tidyverse)
 library(deSolve)
 library(growthrates)
+library(bbplot)
 ```
 
 ## Importing data and summary 
@@ -80,7 +81,7 @@ MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimen
 
 
 HCM1_OCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS/LHFEPP_part1.xlsx", 
-    sheet = "HCM1-PCA4_GV")%>%
+    sheet = "HCM1-OCA4_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
@@ -164,7 +165,7 @@ scale_colour_brewer(palette = "Spectral") +
   facet_wrap(~media)  +
   bbc_style()
 
-# ggsave("part3_growtcurves.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+# ggsave("part3_growtcurves_replicates.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 ## calculation of growth rate and lag phase 
 ```{r}
@@ -175,7 +176,7 @@ par(mar=c(1,1,1,1))
 plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
 results <- results(many_spline_fits) %>%
-  filter(r2 >= 0.98)%>%
+ mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
   select(-`y0`)
 
 results <- results %>%
@@ -195,7 +196,7 @@ results <- results %>%
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-# ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
+#ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 
 ## robusntess calculations 
