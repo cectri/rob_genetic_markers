@@ -8,23 +8,101 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+## Script to put all the three perturbation spaces together to check overall fitness and robusntess 
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+### Loading libraries
+```{r}
+library(readxl)
+library(tidyverse)
+library(deSolve)
+library(lattice)
+library(growthrates)
+library(bbplot)
+library(ggpubr)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+### Importing data
+```{r}
+LHPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHPS.rds")
+BPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/BPS.rds")
+CPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/CPS.rds")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Merging the results
+```{r}
+df <- LHPS_df %>%
+  rbind(BPS_df) %>%
+  rbind(CPS_df)
+```
+
+### Calculating growth rates
+```{r}
+df <- na.omit(df) #because I was getting an error of missing values insmooth splines
+many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate,
+                                data = df, spar = 0.7)
+par(mfrow = c(6,6))
+par(mar=c(1,1,1,1))
+plot(many_spline_fits)
+#data frame is created with the results coming from all_splines function
+results <- results(many_spline_fits) %>%
+mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
+  select(-`y0`)
+```
+ 
+ ### Visualizing overall results:
+```{r}
+results <- results %>%
+  mutate(replicate= as.character(replicate)) %>%
+  mutate(strain = factor(strain,levels=c("QDR1","MET28","MRP13","HCM1","GBP2","RPS14A","RPS14B","OCA4","MSH3", "BCH1", "WWM1","HLJ1", "TIR3", "SMA2", "CENPK", "ETRED"))) 
+
+p <- ggplot(data= results, 
+      aes(x = strain,
+          y = mumax, fill = strain)
+    ) +
+    ylim(0,0.3)+
+    geom_violin(width=0.9,alpha = 0.3) +
+    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA, aes(middle=mean(mumax)))+
+    scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+    # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
+    bbc_style()+
+  stat_compare_means(method = "wilcox.test", label = "p.signif", 
+                     ref.group = "CENPK")+
+  guides(fill="none")+
+    theme(strip.text = element_text(face="bold"),
+        text = element_text(size = 15),
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
+```
+
+### Robusntess calculations 
+```{r}
+df_mean <- results %>%
+  group_by(strain) %>% #calculating mean for each sample in the agar plate 
+  mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
+  mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
+  filter(media == "CPS_1")
+mean_mumax <- mean(df_mean$mean) 
+
+df_R <- df_mean %>%
+  mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
+  mutate(robustness_n=robustness/mean_mumax, na.rm=TRUE) %>%#calculating normalized robustness with the mean of all strains and all experiments
+  group_by(strain) %>%
+  mutate(mean_R=mean(robustness_n, na.rm=TRUE)) %>% #mean of the 4 replicates per sample coming from the 4 different plates
+  mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) %>% #standard error = standard deviation of the sampling distribution/sqrt n of samples
+  filter(replicate == "1")
+```
+### Plotting robusntess 
+```{r}
+p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
+  ylim(-0.2,0.3)+
+  scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+  geom_hline(aes(yintercept = robustness_n), 
+              data = filter(df_R, strain == "CENPK"),
+             linetype = "dashed", color = "#5B9589")+
+  bbc_style()+
+  guides(color="none")+
+  theme(strip.text = element_text(face="bold"),
+        text = element_text(size = 15),
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
+
+# ggsave("FR_CPS_098cut.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+```

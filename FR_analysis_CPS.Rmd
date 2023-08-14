@@ -31,7 +31,7 @@ This script is used to analyse fitness data of Saccharomyces cerevisiae strains.
 16) Ethanol Red
 
 The strains above were grown in three different perturbation spaces. THe first one containing the following perturbations: 
-Four different malts + 12 hops + 6 aromas and 2 finnings
+Different combinations of sugars and anitfungal chemicals 
 
 ### Loading libraries
 ```{r}
@@ -138,6 +138,7 @@ df <- QDR1_GBP2 %>%
   rbind(HLJ1_TIR3) %>%
   rbind(CENPK_ETRED) 
 
+saveRDS(df, file = "CPS.rds")
 ```
 ## Checking growth curves with plots
 ```{r}
