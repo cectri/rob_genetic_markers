@@ -153,6 +153,7 @@ df <- QDR1_GBP2 %>%
   rbind(HLJ1_ETRED) %>%
   rbind(TIR3_CENPK) 
 
+saveRDS(df, file = "LHPS.rds")
 ```
 ## Checking growth curves with plots
 ```{r}
@@ -183,15 +184,19 @@ results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(strain = factor(strain,levels=c("QDR1","MET28","MRP13","HCM1","GBP2","RPS14A","RPS14B","OCA4","MSH3", "BCH1", "WWM1","HLJ1", "TIR3", "SMA2", "CENPK", "ETRED"))) 
 
-  ggplot(data= results, 
+ p <- ggplot(data= results, 
       aes(x = strain,
           y = mumax, fill = strain)
     ) +
-    geom_violin(width=0.9,alpha = 0.7) +
+    ylim(0,0.3)+
+    geom_violin(width=0.9,alpha = 0.3) +
     geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA, aes(middle=mean(mumax)))+
     scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
     bbc_style()+
+  stat_compare_means(method = "wilcox.test", label = "p.signif", 
+                     ref.group = "CENPK")+
+  guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
@@ -202,29 +207,33 @@ results <- results %>%
 ## robusntess calculations 
 ```{r}
 df_mean <- results %>%
-  group_by(strain,replicate) %>% #calculating mean for each sample in the agar plate 
+  group_by(strain) %>% #calculating mean for each sample in the agar plate 
   mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
   mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
-  filter(media == "Delft" ) 
-mean_mumax <- mean(df_mean$mean) 
+  filter(media == "Delft")
+mean_mumax <- mean(df_mean$mean)
 
 df_R <- df_mean %>%
   mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
   mutate(robustness_n=robustness/mean_mumax, na.rm=TRUE) %>%#calculating normalized robustness with the mean of all strains and all experiments
   group_by(strain) %>%
   mutate(mean_R=mean(robustness_n, na.rm=TRUE)) %>% #mean of the 4 replicates per sample coming from the 4 different plates
-  mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) #standard error = standard deviation of the sampling distribution/sqrt n of samples
+  mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) %>% #standard error = standard deviation of the sampling distribution/sqrt n of samples
+  filter(replicate == "1")
 ```
 ## plotting robusntess 
 ```{r}
-ggplot(df_R,aes(x=strain, y=robustness_n, fill=strain)) +
-  geom_boxplot(outlier.shape=NA, aes(middle=mean(mumax)))+
-  scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
+  ylim(-0.2,0.3)+
+  scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+  geom_hline(aes(yintercept = robustness_n), 
+              data = filter(df_R, strain == "CENPK"),
+             linetype = "dashed", color = "#5B9589")+
   bbc_style()+
-    theme(strip.text = element_text(face="bold"),
+  guides(color="none")+
+  theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
-        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))+
-    labs(x= "strains", y="Robusntess of µmax")
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 # ggsave("robusntess_LHPS_098cut.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 
