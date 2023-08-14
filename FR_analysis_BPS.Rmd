@@ -141,8 +141,8 @@ df <- QDR1_GBP2 %>%
 ## Checking growth curves with plots
 ```{r}
 df <- df %>%
-  mutate(replicate= as.character(replicate)) 
-  # mutate(media = factor(media,levels=c("BPS_1","BPS_2","BPS_3","BPS_4","BPS_5","BPS_6","BPS_7","BPS_8","BPS_9", "BPS_10", "BPS_11","BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16"))) 
+  mutate(replicate= as.character(replicate)) %>%
+  mutate(media = factor(media,levels=c("BPS_1","BPS_2","BPS_3","BPS_4","BPS_5","BPS_6","BPS_7","BPS_8","BPS_9", "BPS_10", "BPS_11","BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16")))
 ggplot() +
   geom_point(data = subset(df, strain == c("TIR3", "HLJ1","CENPK", "ETRED")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
   # xlim(0,25)+
@@ -163,7 +163,7 @@ par(mar=c(1,1,1,1))
 plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
 results <- results(many_spline_fits) %>%
-  filter(r2 >= 0.98)%>%
+mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
   select(-`y0`)
 
 results <- results %>%
@@ -192,7 +192,7 @@ df_mean <- results %>%
   group_by(strain,replicate) %>% #calculating mean for each sample in the agar plate 
   mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
   mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
-  filter(media == "Delft" ) 
+  filter(media == "BPS_1" ) 
 mean_mumax <- mean(df_mean$mean) 
 
 df_R <- df_mean %>%
