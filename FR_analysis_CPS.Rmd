@@ -224,7 +224,7 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
 
-# ggsave("FR_CPS_098cut.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("FR_CPS.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
 ```
 
 #Extract perturbation space form Costanzo paper
@@ -283,5 +283,5 @@ P +  geom_point(data=df_R_costanzo, size=5, aes(x=strain, y=robustness_n, color=
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-# ggsave("FR_CPS_098cut_onlycostanzo.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("FR_CPS_onlycostanzo.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
 ```
