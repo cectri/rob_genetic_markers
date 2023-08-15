@@ -196,7 +196,7 @@ results <- results %>%
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CENPK")+
+                     ref.group = "CENPK", size=8)+
   guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
@@ -235,6 +235,6 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-#ggsave("FR_LHPS.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
+ggsave("FR_LHPS.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 

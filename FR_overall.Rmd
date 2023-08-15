@@ -23,9 +23,12 @@ library(ggpubr)
 
 ### Importing data
 ```{r}
-LHPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/LHPS.rds")
-BPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/BPS.rds")
-CPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/CPS.rds")
+LHPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/LHPS.rds") %>%
+  mutate(p_space="LHPS")
+BPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/BPS.rds") %>%
+  mutate(p_space="BPS")
+CPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/CPS.rds") %>%
+  mutate(p_space="CPS")
 ```
 
 ### Merging the results
@@ -38,7 +41,7 @@ df <- LHPS_df %>%
 ### Calculating growth rates
 ```{r}
 df <- na.omit(df) #because I was getting an error of missing values insmooth splines
-many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate,
+many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate + p_space,
                                 data = df, spar = 0.7)
 par(mfrow = c(6,6))
 par(mar=c(1,1,1,1))
@@ -66,7 +69,7 @@ p <- ggplot(data= results,
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CENPK")+
+                     ref.group = "CENPK", size=8)+
   guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
@@ -79,7 +82,7 @@ df_mean <- results %>%
   group_by(strain) %>% #calculating mean for each sample in the agar plate 
   mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
   mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
-  filter(media == "CPS_1")
+  filter(media == "BPS_1")
 mean_mumax <- mean(df_mean$mean) 
 
 df_R <- df_mean %>%
@@ -93,7 +96,7 @@ df_R <- df_mean %>%
 ### Plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
-  ylim(-0.2,0.3)+
+  ylim(-0.5,0.3)+
   scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R, strain == "CENPK"),
@@ -104,5 +107,21 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-# ggsave("FR_CPS_098cut.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+ggsave("FR_overall.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+```
+## checking mumax in all perturbations to see which strain stands out 
+```{r}
+results <- results %>%
+  mutate(media = factor(media,levels=c("Delft", "Delft_5glu", "Delft_100glu","Delft_NB", "Delft_pH3", "Delft-05VM", "Delft_25NaCl", "Delft_80NaCl",  "Delft_50etoh",  "Delft_100etoh", "Delft_AA2", "Delft_FA2",  "Delft_10LA", "Delft_HMF1", "eSSH20", "SCH100", "BPS_1", "BPS_2",  "BPS_3", "BPS_4", "BPS_5", "BPS_6", "BPS_7", "BPS_8", "BPS_9", "BPS_10", "BPS_11", "BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16", "CPS_1", "CPS_2",  "CPS_3", "CPS_4", "CPS_5", "CPS_6", "CPS_7", "CPS_8", "CPS_9", "CPS_10", "CPS_11", "CPS_12", "CPS_13", "CPS_14", "CPS_15", "CPS_16"))) %>%
+   mutate(strain = factor(strain,levels=c("QDR1","MET28","MRP13","HCM1","GBP2","RPS14A","RPS14B","OCA4","MSH3", "BCH1", "WWM1","HLJ1", "TIR3", "SMA2", "CENPK", "ETRED"))) 
+      
+ggplot(results, aes(x = media, y = strain)) + 
+  geom_tile(colour="black", size = 0.25, aes(fill = mumax)) +
+  scale_fill_gradientn(colours = c("#4775A5", "#7acfbd","#E9C46A", "#922A2B"),
+                       na.value = "#C9C9C9") +
+  coord_fixed(ratio = 1)+
+  theme(axis.text = element_text(size = 20),
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
+
+ggsave("fitness_overall.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
 ```

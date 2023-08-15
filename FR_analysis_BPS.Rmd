@@ -183,7 +183,7 @@ results <- results %>%
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CENPK")+
+                     ref.group = "CENPK", size=8)+
   guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
