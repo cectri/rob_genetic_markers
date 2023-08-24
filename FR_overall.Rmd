@@ -43,9 +43,9 @@ df <- LHPS_df %>%
 df <- na.omit(df) #because I was getting an error of missing values insmooth splines
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate + p_space,
                                 data = df, spar = 0.7)
-par(mfrow = c(6,6))
-par(mar=c(1,1,1,1))
-plot(many_spline_fits)
+# par(mfrow = c(6,6))
+# par(mar=c(1,1,1,1))
+# plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
 results <- results(many_spline_fits) %>%
 mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
@@ -96,7 +96,7 @@ df_R <- df_mean %>%
 ### Plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
-  ylim(-0.5,0.3)+
+  ylim(-0.4,0.3)+
   scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R, strain == "CENPK"),
