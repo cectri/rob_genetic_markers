@@ -172,6 +172,7 @@ scale_colour_brewer(palette = "Spectral") +
 ```
 ## calculation of growth rate and lag phase 
 ```{r}
+df <- na.omit(df)
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate, data = df, spar = 0.7)
 par(mfrow = c(6,6))
 par(mar=c(1,1,1,1))
