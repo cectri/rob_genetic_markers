@@ -164,6 +164,7 @@ par(mfrow = c(6,6))
 par(mar=c(1,1,1,1))
 plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
+#in this perturbation set it is not necessary to set mumax to 0 as all the strains grew in all conditions. Therefore only the mumax with low r2 will be set to NA
 results <- results(many_spline_fits) %>%
 mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
   select(-`y0`)

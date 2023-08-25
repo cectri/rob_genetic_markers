@@ -159,16 +159,17 @@ saveRDS(df, file = "LHPS.rds")
 ```
 ## Checking growth curves with plots
 ```{r}
+#names of the strains: "qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"
 df <- df %>%
   mutate(replicate= as.character(replicate)) 
 ggplot() +
-  geom_point(data = subset(df, strain == c("HLJ1", "ETRED","TIR3", "CENPK")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
+  geom_point(data = subset(df, strain == c("tir3Δ","sma2Δ", "CEN.PK113-7D","EthanolRed")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
 scale_colour_brewer(palette = "Spectral") +
   labs(y = "log_GV", x = "time(h)")+
   facet_wrap(~media)  +
   bbc_style()
 
-# ggsave("part3_growtcurves_replicates.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
+# ggsave("part3_growtcurves_replicates.pdf",device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 ## calculation of growth rate and lag phase 
 ```{r}
@@ -177,9 +178,20 @@ many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate, data
 par(mfrow = c(6,6))
 par(mar=c(1,1,1,1))
 plot(many_spline_fits)
+
 #data frame is created with the results coming from all_splines function
-results <- results(many_spline_fits) %>%
- mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
+results <- results(many_spline_fits) 
+
+#the umax of the strains that did not grow is set to 0 based on the growth curves above
+results$mumax <- ifelse(results$media == "Delft_100etoh" | results$media == "Delft_pH3", 0 , results$mumax) #none of the strains grew with Delft_100etoh or pH3
+results$mumax <- ifelse(results$media == "Delft_80NaCl" & results$strain != "EthanolRed", 0 , results$mumax) #only Ethanol Red grew with 80 g/L NaCl
+
+#single strains that did not grow in certain conditions 
+results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Delft_FA2" | results$media == "SCH100") & results$strain == "met28Δ", 0 , results$mumax)
+
+# now the mumax of remaining strains with r2 <= 0.99 and mumax != 0 is set to NA
+ results <- results %>%
+   mutate(mumax = ifelse(r2 <= 0.99 & mumax != 0, NA, mumax))%>% #first I convert all the mumax values <0.99 to NA as the approximation of the function is not reiable 
   select(-`y0`)
 
 results <- results %>%
@@ -226,7 +238,7 @@ df_R <- df_mean %>%
 ## plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
-  ylim(-0.2,0.3)+
+  ylim(-0.47,0.3)+
   scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R, strain == "CEN.PK113-7D"),
@@ -236,6 +248,6 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-ggsave("FR_LHPS.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
+#ggsave("FR_LHPS.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
 ```
 
