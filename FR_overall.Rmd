@@ -19,6 +19,7 @@ library(lattice)
 library(growthrates)
 library(bbplot)
 library(ggpubr)
+library(Cairo)
 ```
 
 ### Importing data
@@ -43,12 +44,29 @@ df <- LHPS_df %>%
 df <- na.omit(df) #because I was getting an error of missing values insmooth splines
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate + p_space,
                                 data = df, spar = 0.7)
+results <- results(many_spline_fits) 
 # par(mfrow = c(6,6))
 # par(mar=c(1,1,1,1))
 # plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
-results <- results(many_spline_fits) %>%
-mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
+#based on the single environments set to zero the strains that did not grow (as done in the single scripts)
+#LHPS
+results$mumax <- ifelse(results$media == "Delft_100etoh" | results$media == "Delft_pH3", 0 , results$mumax) #none of the strains grew with Delft_100etoh or pH3
+#single strains that did not grow in certain conditions 
+results$mumax <- ifelse((results$media == "Delft_80NaCl" | results$media == "Delft_FA2" | results$media == "SCH100") & results$strain == "met28Δ", 0 , results$mumax)
+#BPS had none
+#CPS 
+#the umax of the strains that did not grow is set to 0 based on the growth curves above
+results$mumax <- ifelse(results$media == "CPS_14" , 0 , results$mumax)
+results$mumax <- ifelse(results$media == "CPS_2" & results$strain == "msh3Δ" & results$replicate == "3", 0 , results$mumax) 
+results$mumax <- ifelse(results$media == "CPS_7" & results$strain == "wwm1Δ" , 0 , results$mumax) 
+results$mumax <- ifelse(results$media == "CPS_5" & (results$strain == "rps14aΔ" | results$strain == "tir3Δ" | results$strain == "CEN.PK113-7D") & (results$replicate == "2" | results$replicate == "3"), 0 , results$mumax) 
+#single strains that did not grow in certain conditions 
+results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Delft_FA2" | results$media == "SCH100") & results$strain == "met28Δ", 0 , results$mumax)
+
+# now the mumax of remaining strains with r2 <= 0.99 and mumax != 0 is set to NA
+ results <- results %>%
+   mutate(mumax = ifelse(r2 <= 0.99 & mumax != 0, NA, mumax))%>% #first I convert all the mumax values <0.99 to NA as the approximation of the function is not reiable 
   select(-`y0`)
 ```
  
@@ -56,7 +74,7 @@ mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
 ```{r}
 results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
-  mutate(strain = factor(strain,levels=c("QDR1","MET28","MRP13","HCM1","GBP2","RPS14A","RPS14B","OCA4","MSH3", "BCH1", "WWM1","HLJ1", "TIR3", "SMA2", "CENPK", "ETRED"))) 
+  mutate(strain = factor(strain,levels=c("qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"))) 
 
 p <- ggplot(data= results, 
       aes(x = strain,
@@ -69,7 +87,7 @@ p <- ggplot(data= results,
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CENPK", size=8)+
+                     ref.group = "CEN.PK113-7D", size=8)+
   guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
@@ -99,7 +117,7 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   ylim(-0.4,0.3)+
   scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
   geom_hline(aes(yintercept = robustness_n), 
-              data = filter(df_R, strain == "CENPK"),
+              data = filter(df_R, strain == "CEN.PK113-7D"),
              linetype = "dashed", color = "#5B9589")+
   bbc_style()+
   guides(color="none")+
@@ -107,13 +125,13 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-ggsave("FR_overall.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+ggsave("FR_overall.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
 ```
 ## checking mumax in all perturbations to see which strain stands out 
 ```{r}
 results <- results %>%
   mutate(media = factor(media,levels=c("Delft", "Delft_5glu", "Delft_100glu","Delft_NB", "Delft_pH3", "Delft-05VM", "Delft_25NaCl", "Delft_80NaCl",  "Delft_50etoh",  "Delft_100etoh", "Delft_AA2", "Delft_FA2",  "Delft_10LA", "Delft_HMF1", "eSSH20", "SCH100", "BPS_1", "BPS_2",  "BPS_3", "BPS_4", "BPS_5", "BPS_6", "BPS_7", "BPS_8", "BPS_9", "BPS_10", "BPS_11", "BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16", "CPS_1", "CPS_2",  "CPS_3", "CPS_4", "CPS_5", "CPS_6", "CPS_7", "CPS_8", "CPS_9", "CPS_10", "CPS_11", "CPS_12", "CPS_13", "CPS_14", "CPS_15", "CPS_16"))) %>%
-   mutate(strain = factor(strain,levels=c("QDR1","MET28","MRP13","HCM1","GBP2","RPS14A","RPS14B","OCA4","MSH3", "BCH1", "WWM1","HLJ1", "TIR3", "SMA2", "CENPK", "ETRED"))) 
+   mutate(strain = factor(strain,levels=c("qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"))) 
       
 ggplot(results, aes(x = media, y = strain)) + 
   geom_tile(colour="black", size = 0.25, aes(fill = mumax)) +
@@ -123,5 +141,5 @@ ggplot(results, aes(x = media, y = strain)) +
   theme(axis.text = element_text(size = 20),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-ggsave("fitness_overall.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+ggsave("fitness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
 ```
