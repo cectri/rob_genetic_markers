@@ -74,7 +74,7 @@ results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Del
 ```{r}
 results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
-  mutate(strain = factor(strain,levels=c("qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"))) 
+  mutate(strain = factor(strain,levels=c("qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"))) 
 
 p <- ggplot(data= results, 
       aes(x = strain,
@@ -114,7 +114,7 @@ df_R <- df_mean %>%
 ### Plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
-  ylim(-0.4,0.3)+
+  ylim(-0.33,0.3)+
   scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R, strain == "CEN.PK113-7D"),
@@ -125,13 +125,13 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-ggsave("FR_overall.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+#ggsave("FR_overall.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
 ```
 ## checking mumax in all perturbations to see which strain stands out 
 ```{r}
 results <- results %>%
   mutate(media = factor(media,levels=c("Delft", "Delft_5glu", "Delft_100glu","Delft_NB", "Delft_pH3", "Delft-05VM", "Delft_25NaCl", "Delft_80NaCl",  "Delft_50etoh",  "Delft_100etoh", "Delft_AA2", "Delft_FA2",  "Delft_10LA", "Delft_HMF1", "eSSH20", "SCH100", "BPS_1", "BPS_2",  "BPS_3", "BPS_4", "BPS_5", "BPS_6", "BPS_7", "BPS_8", "BPS_9", "BPS_10", "BPS_11", "BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16", "CPS_1", "CPS_2",  "CPS_3", "CPS_4", "CPS_5", "CPS_6", "CPS_7", "CPS_8", "CPS_9", "CPS_10", "CPS_11", "CPS_12", "CPS_13", "CPS_14", "CPS_15", "CPS_16"))) %>%
-   mutate(strain = factor(strain,levels=c("qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"))) 
+   mutate(strain = factor(strain,levels=c("qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"))) 
       
 ggplot(results, aes(x = media, y = strain)) + 
   geom_tile(colour="black", size = 0.25, aes(fill = mumax)) +
@@ -141,5 +141,5 @@ ggplot(results, aes(x = media, y = strain)) +
   theme(axis.text = element_text(size = 20),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-ggsave("fitness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+ggsave("fitness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
 ```

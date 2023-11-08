@@ -143,38 +143,38 @@ saveRDS(df, file = "CPS.rds")
 ```
 ## Checking growth curves with plots
 ```{r}
-#names of the strains: "qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"
+#names of the strains: "qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"
 df <- df %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(media = factor(media,levels=c("CPS_1","CPS_2","CPS_3","CPS_4","CPS_5","CPS_6","CPS_7","CPS_8","CPS_9", "CPS_10", "CPS_11","CPS_12", "CPS_13", "CPS_14", "CPS_15", "CPS_16")))
 ggplot() +
-  geom_point(data = subset(df, strain == c("tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
+  geom_point(data = subset(df, strain == c("tir3", "sma2","CEN.PK113-7D", "EthanolRed")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
   # xlim(0,25)+
 scale_colour_brewer(palette = "Spectral") +
   labs(title= "Growth curves in Costanzo Perturbation Space", y = "log_GV", x = "time(h)")+
   facet_wrap(~media)  +
   bbc_style()
 
-# ggsave("part3_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("part3_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
 ```
 ## calculation of growth rate and lag phase 
 ```{r}
 df <- na.omit(df) #because I was getting an error of missing values insmooth splines
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate,
                                 data = df, spar = 0.7)
-par(mfrow = c(6,6))
-par(mar=c(1,1,1,1))
-plot(many_spline_fits)
+# par(mfrow = c(6,6))
+# par(mar=c(1,1,1,1))
+# plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
 results <- results(many_spline_fits) 
 
 #the umax of the strains that did not grow is set to 0 based on the growth curves above
 results$mumax <- ifelse(results$media == "CPS_14" , 0 , results$mumax)
-results$mumax <- ifelse(results$media == "CPS_2" & results$strain == "msh3Δ" & results$replicate == "3", 0 , results$mumax) 
-results$mumax <- ifelse(results$media == "CPS_7" & results$strain == "wwm1Δ" , 0 , results$mumax) 
-results$mumax <- ifelse(results$media == "CPS_5" & (results$strain == "rps14aΔ" | results$strain == "tir3Δ" | results$strain == "CEN.PK113-7D") & (results$replicate == "2" | results$replicate == "3"), 0 , results$mumax) 
+results$mumax <- ifelse(results$media == "CPS_2" & results$strain == "msh3" & results$replicate == "3", 0 , results$mumax) 
+results$mumax <- ifelse(results$media == "CPS_7" & results$strain == "wwm1" , 0 , results$mumax) 
+results$mumax <- ifelse(results$media == "CPS_5" & (results$strain == "rps14a" | results$strain == "tir3" | results$strain == "CEN.PK113-7D") & (results$replicate == "2" | results$replicate == "3"), 0 , results$mumax) 
 #single strains that did not grow in certain conditions 
-results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Delft_FA2" | results$media == "SCH100") & results$strain == "met28Δ", 0 , results$mumax)
+results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Delft_FA2" | results$media == "SCH100") & results$strain == "met28", 0 , results$mumax)
 
 # now the mumax of remaining strains with r2 <= 0.99 and mumax != 0 is set to NA
  results <- results %>%
@@ -183,7 +183,10 @@ results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Del
 
 results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
-  mutate(strain = factor(strain,levels=c("qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"))) 
+  mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
+
+mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
+
 
 p <- ggplot(data= results, 
       aes(x = strain,
@@ -191,12 +194,14 @@ p <- ggplot(data= results,
     ) +
     ylim(0,0.3)+
     geom_violin(width=0.9,alpha = 0.3) +
-    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA, aes(middle=mean(mumax)))+
-    scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA)+
+  stat_summary(fun=mean, geom='point', shape=20, size=3, color="white") +
+    scale_fill_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
+  geom_hline(yintercept = mean_mumax_CENPK, linetype = "dashed", color = "black")+
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CEN.PK113-7D", size =8)+
+                     ref.group = "CEN.PK113-7D", size=8, hide.ns = TRUE)+
   guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
@@ -225,19 +230,18 @@ df_R <- df_mean %>%
 ## plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
-  ylim(-0.21,0.3)+
-  scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+  ylim(-0.23,0.3)+
+  scale_color_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R, strain == "CEN.PK113-7D"),
-             linetype = "dashed", color = "#5B9589")+
+             linetype = "dashed", color = "black")+
   bbc_style()+
   guides(color="none")+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-
-# ggsave("FR_CPS.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("FR_CPS_1.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
 ```
 
 #Extract perturbation space form Costanzo paper
@@ -247,19 +251,24 @@ filtered_categories <- c("CPS_4","CPS_5","CPS_6", "CPS_7","CPS_9","CPS_12","CPS_
 costanzo <- results %>%
   filter(media %in% filtered_categories) 
 
+mean_mumax_CENPK_costanzo <- mean(filter(costanzo, strain == "CEN.PK113-7D")$mumax)
+
+
 P <- ggplot(data= costanzo, 
       aes(x = strain,
           y = mumax, fill = strain)
     ) +
-  ylim(0,0.3)+
+    ylim(0,0.3)+
     geom_violin(width=0.9,alpha = 0.3) +
-    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA, aes(middle=mean(mumax)))+
-    scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA)+
+  stat_summary(fun=mean, geom='point', shape=20, size=3, color="white") +
+    scale_fill_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
+  geom_hline(yintercept = mean_mumax_CENPK_costanzo, linetype = "dashed", color = "black")+
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CEN.PK113-7D", size=8)+
-    guides(fill="none")+
+                     ref.group = "CEN.PK113-7D", size=8, hide.ns = TRUE)+
+  guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
@@ -285,16 +294,16 @@ df_R_costanzo <- df_mean_costanzo %>%
 ```
 ## plotting robusntess only with Costanzo perturbations
 ```{r}
-P +  geom_point(data=df_R_costanzo, size=5, aes(x=strain, y=robustness_n, color=strain))+
-  ylim(-0.22,0.3)+
-  scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+P +  geom_point(data=df_R_costanzo, aes(x=strain, y=robustness_n, color=strain),size=5)+
+  ylim(-0.26,0.3)+
+  scale_color_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R_costanzo, strain == "CEN.PK113-7D"),
-             linetype = "dashed", color = "#5B9589")+
+             linetype = "dashed", color = "black")+
   bbc_style()+
   guides(color="none")+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-#ggsave("FR_CPS_onlycostanzo.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("FR_CPS_1_onlycostanzo.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
 ```

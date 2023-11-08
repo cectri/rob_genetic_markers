@@ -142,51 +142,55 @@ saveRDS(df, file = "BPS.rds")
 ```
 ## Checking growth curves with plots
 ```{r}
-#names of the strains: "qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"
+#names of the strains: "qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"
 df <- df %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(media = factor(media,levels=c("BPS_1","BPS_2","BPS_3","BPS_4","BPS_5","BPS_6","BPS_7","BPS_8","BPS_9", "BPS_10", "BPS_11","BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16")))
 
 ggplot() +
   xlim(0,48)+
-  geom_point(data = subset(df, strain == c("tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
+  geom_point(data = subset(df, strain == c("tir3", "sma2", "CEN.PK113-7D", "EthanolRed")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
 scale_colour_brewer(palette = "Spectral") +
   labs(title= "Growth curves in Beer Perturbation Space", y = "log_GV", x = "time(h)")+
   facet_wrap(~media)  +
   bbc_style()
 
-ggsave("part4_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/BPS_fitness")
+#ggsave("part4_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/BPS_fitness")
 ```
 ## calculation of growth rate and lag phase 
 ```{r}
 df <- na.omit(df) #because I was getting an error of missing values insmooth splines
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate,
                                 data = df, spar = 0.7)
-par(mfrow = c(6,6))
-par(mar=c(1,1,1,1))
-plot(many_spline_fits)
+# par(mfrow = c(6,6))
+# par(mar=c(1,1,1,1))
+# plot(many_spline_fits)
 #data frame is created with the results coming from all_splines function
 #in this perturbation set it is not necessary to set mumax to 0 as all the strains grew in all conditions. Therefore only the mumax with low r2 will be set to NA
 results <- results(many_spline_fits) %>%
-mutate(mumax = ifelse(r2 <= 0.98, NA, mumax))%>%
+mutate(mumax = ifelse(r2 <= 0.99 & mumax != 0, NA, mumax))%>%
   select(-`y0`)
 
 results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
-  mutate(strain = factor(strain,levels=c("qdr1Δ","met28Δ","mrp13Δ","hcm1Δ","gbp2Δ","rps14aΔ","rps14bΔ","oca4Δ","msh3Δ", "bch1Δ", "wwm1Δ","hlj1Δ", "tir3Δ", "sma2Δ", "CEN.PK113-7D", "EthanolRed"))) 
+  mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
+ 
+mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
 
- p <- ggplot(data= results, 
+p <- ggplot(data= results, 
       aes(x = strain,
           y = mumax, fill = strain)
     ) +
-    ylim(0,0.3)+
+    ylim(0,0.2)+
     geom_violin(width=0.9,alpha = 0.3) +
-    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA, aes(middle=mean(mumax)))+
-    scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA)+
+  stat_summary(fun=mean, geom='point', shape=20, size=3, color="white") +
+    scale_fill_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
+  geom_hline(yintercept = mean_mumax_CENPK, linetype = "dashed", color = "black")+
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CEN.PK113-7D", size=8)+
+                     ref.group = "CEN.PK113-7D", size=8, hide.ns = TRUE, label.y = 0.15)+
   guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
@@ -215,17 +219,17 @@ df_R <- df_mean %>%
 ## plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
-  ylim(-0.2,0.3)+
-  scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+  ylim(-0.2,0.2)+
+  scale_color_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R, strain == "CEN.PK113-7D"),
-             linetype = "dashed", color = "#5B9589")+
+             linetype = "dashed", color = "black")+
   bbc_style()+
   guides(color="none")+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-#ggsave("FR_BPS.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/BPS_fitness")
+#ggsave("FR_BPS_2.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/BPS_fitness")
 ```
 
