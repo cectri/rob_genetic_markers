@@ -74,7 +74,9 @@ results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Del
 ```{r}
 results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
-  mutate(strain = factor(strain,levels=c("qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"))) 
+  mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
+
+mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
 
 p <- ggplot(data= results, 
       aes(x = strain,
@@ -82,12 +84,14 @@ p <- ggplot(data= results,
     ) +
     ylim(0,0.3)+
     geom_violin(width=0.9,alpha = 0.3) +
-    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA, aes(middle=mean(mumax)))+
-    scale_fill_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+    geom_boxplot(width=0.1,position=position_dodge(0.9), outlier.shape=NA)+
+  stat_summary(fun=mean, geom='point', shape=20, size=3, color="white") +
+    scale_fill_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
     # facet_grid(cols =vars(Strain), rows = vars(Experiment)) +
+  geom_hline(yintercept = mean_mumax_CENPK, linetype = "dashed", color = "black")+
     bbc_style()+
   stat_compare_means(method = "wilcox.test", label = "p.signif", 
-                     ref.group = "CEN.PK113-7D", size=8)+
+                     ref.group = "CEN.PK113-7D", size=8, hide.ns = TRUE)+
   guides(fill="none")+
     theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
@@ -114,24 +118,23 @@ df_R <- df_mean %>%
 ### Plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
-  ylim(-0.33,0.3)+
-  scale_color_manual(values=c("#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5","#5B9589","#5B9589")) +
+  ylim(-0.35,0.3)+
+  scale_color_manual(values=c("black","black","#922A2B","#922A2B","#922A2B","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140","#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
   geom_hline(aes(yintercept = robustness_n), 
               data = filter(df_R, strain == "CEN.PK113-7D"),
-             linetype = "dashed", color = "#5B9589")+
+             linetype = "dashed", color = "black")+
   bbc_style()+
   guides(color="none")+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-
 #ggsave("FR_overall.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
 ```
 ## checking mumax in all perturbations to see which strain stands out 
 ```{r}
 results <- results %>%
   mutate(media = factor(media,levels=c("Delft", "Delft_5glu", "Delft_100glu","Delft_NB", "Delft_pH3", "Delft-05VM", "Delft_25NaCl", "Delft_80NaCl",  "Delft_50etoh",  "Delft_100etoh", "Delft_AA2", "Delft_FA2",  "Delft_10LA", "Delft_HMF1", "eSSH20", "SCH100", "BPS_1", "BPS_2",  "BPS_3", "BPS_4", "BPS_5", "BPS_6", "BPS_7", "BPS_8", "BPS_9", "BPS_10", "BPS_11", "BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16", "CPS_1", "CPS_2",  "CPS_3", "CPS_4", "CPS_5", "CPS_6", "CPS_7", "CPS_8", "CPS_9", "CPS_10", "CPS_11", "CPS_12", "CPS_13", "CPS_14", "CPS_15", "CPS_16"))) %>%
-   mutate(strain = factor(strain,levels=c("qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"))) 
+  mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
       
 ggplot(results, aes(x = media, y = strain)) + 
   geom_tile(colour="black", size = 0.25, aes(fill = mumax)) +
@@ -141,5 +144,52 @@ ggplot(results, aes(x = media, y = strain)) +
   theme(axis.text = element_text(size = 20),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-ggsave("fitness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+#ggsave("fitness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
 ```
+### robusntess overall 
+```{r}
+results <- results %>%
+  mutate(p_space = case_when(
+    grepl("^CPS", media) ~ "CPS",
+    grepl("^BPS", media) ~ "BPS",
+    TRUE ~ "LHPS"
+  ))
+
+df_mean_2 <- results %>%
+  group_by(strain, p_space) %>% #calculating mean for each sample in the agar plate 
+  mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
+  mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
+  filter((media == "CPS_1" | media == "BPS_1" | media == "Delft")& replicate==1)
+
+mean_mumax_BPS <- mean(df_mean_2$mean[df_mean_2$p_space == "BPS"])
+mean_mumax_CPS <- mean(df_mean_2$mean[df_mean_2$p_space == "CPS"])
+mean_mumax_LHPS <- mean(df_mean_2$mean[df_mean_2$p_space == "LHPS"])
+
+df_R_2 <- df_mean_2 %>%
+  mutate(mean_p_space = case_when(
+    p_space %in% "BPS" ~ mean_mumax_BPS,
+    p_space %in% "CPS" ~ mean_mumax_CPS,
+    p_space %in% "LHPS" ~ mean_mumax_LHPS)) %>%
+  mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
+  mutate(robustness_n=robustness/mean_p_space, na.rm=TRUE) #calculating normalized robustness with the mean of all strains and all experiment
+```
+Plotting as heatmap
+```{r}
+df_R_2 <- df_R_2 %>%
+  mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
+df_R <- df_R %>%
+  mutate(p_space="overall")
+try <- bind_rows(df_R_2, df_R)
+      
+ggplot(try, aes(x = p_space, y = strain)) + 
+  geom_tile(colour="black", size = 0.25, aes(fill = robustness_n)) +
+  scale_fill_gradientn(colours = c("#4775A5", "#7acfbd","#E9C46A", "#922A2B"),
+                       na.value = "#C9C9C9") +
+  coord_fixed(ratio = 1)+
+  theme(axis.text = element_text(size = 20),
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
+
+ggsave("robustness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+```
+
+
