@@ -178,8 +178,9 @@ Plotting as heatmap
 df_R_2 <- df_R_2 %>%
   mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
 df_R <- df_R %>%
-  mutate(p_space="overall")
-try <- bind_rows(df_R_2, df_R)
+  mutate(p_space="overall") 
+try <- bind_rows(df_R_2, df_R) %>%
+  mutate(p_space = factor(p_space,levels=c("LHPS", "BPC", "CPS", "overall"))) 
       
 ggplot(try, aes(x = p_space, y = strain)) + 
   geom_tile(colour="black", size = 0.25, aes(fill = robustness_n)) +

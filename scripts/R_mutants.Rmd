@@ -1,0 +1,373 @@
+---
+title: "Robusntess on yeast genetic interaction network"
+author: "Cecilia Trivellin"
+date: "`r Sys.Date()`"
+output: html_document
+---
+### Industrial Biotechnology Division, Chalmers University of Technology 2023
+
+## Aim of the script
+The datasets used in this script were taken from Costanzo et.al. 2021 and used to calculate robustness for each mutant according to the formula in Trivellin et.al 2022.
+
+### Load libraries
+```{r, results='hide'}
+library(tidyverse)
+library(readxl)
+library(bbplot)
+library(ggplot2)
+library(ggvenn)
+library(VennDiagram)
+library(ggpubr)
+library(packcircles)
+library(RColorBrewer)
+library(patchwork)
+library(treemapify)
+```
+### Load dataset
+```{r}
+# Read Excel file into a dataframe named 'df'
+df <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/raw data/Costanzo_et_al_Data_File_1_Conditions_Strains_Fitness.xlsx", 
+    sheet = "Mutant Fitness_Conditions") %>%
+    # Rename the column "Strain ID" to "ID"
+    rename("ID" = "Strain ID")
+
+# Replace missing values in columns 6 to 19 with 0
+df[, 6:19][is.na(df[, 6:19])] <- 0
+
+# Separate the column "Allele (Essential genes only)" into two columns "gene" and "allele"
+# Select all columns except the original "gene"
+# Combine columns from "Gene Name" to "allele" into a new column "gene" separated by "-"
+df <- df %>% 
+  separate(`Allele (Essential genes only)`, c("gene", "allele"), "-") %>%
+  select(-`gene`) %>%
+  unite('gene', `Gene Name`:`allele`, sep = "-", remove = TRUE, na.rm = TRUE)
+```
+
+## Explore fitness across conditions 
+```{r}
+# Gather the dataframe 'df' from wide to long format using specific columns
+df_long <- df %>%
+  gather(key = "condition", value = "value", c("Actinomycin D", "Benomyl", "Boretzeomib", "Caspofungin", "Concanmycin A", "Cycloheximide", "Fluconazole", "Galactose", "Geldanamycin", "MMS", "Monensin", "Rapamycin", "Sorbitol", "Tunicamycin"))
+
+# Create a violin plot and box plot using ggplot2
+violin_box_plot <- ggplot(df_long, aes(x = condition, y = value)) + 
+  geom_violin(trim = TRUE) +
+  geom_boxplot(width = 0.1, outlier.shape = NA, aes(middle = mean(value))) +
+  bbc_style() + 
+  labs(title = "Fitness distribution", y = "normalized colony size", x = "growth condition") +
+  stat_compare_means(method = "anova", label.y = 1.5) +  # Add ANOVA test comparison
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = 20, angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 15),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20, face = "bold"))
+
+# Calculate overall distribution using density estimation
+overall_density_dist <- density(df_long$value)
+
+# Convert density data to a data frame
+overall_density_df <- data.frame(x = overall_density_dist$x, y = overall_density_dist$y)
+
+# Create a plot for the overall distribution
+overall_distribution_plot <- ggplot(overall_density_df, aes(x = x, y = y)) +
+  geom_line(color = "black", size = 1.2) +
+  bbc_style() +  
+  labs(title = "Overall Distribution", x = "normalized colony size", y = "Density") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = 20, angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 15),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20, face = "bold"))
+
+# Combine the two plots using patchwork
+combined_plot <- violin_box_plot + overall_distribution_plot +
+  plot_layout(ncol = 2, widths = c(3, 1))  # Adjust the widths as per your preference
+
+# Display the combined plot
+print(combined_plot)
+
+# Save the combined plot as a PDF file
+# ggsave("fitness_distribution_overall.pdf", width = 17, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/analysis_costanzo")
+
+```
+## Calculating Robustness
+Calculating mean and stdev for each strain 
+```{r}
+df_1 <- df %>% 
+  mutate(mean = rowMeans(select(df, 5:18), na.rm = TRUE))
+df_1$sd = apply(df_1[,5:18], 1, sd, na.rm=TRUE)
+```
+Computing the Fano factor for each strain
+```{r}
+df_R <- df_1 %>%
+  mutate(R=-sd^2/mean)
+```
+Normalizing the Fano factor for the mean value of the fitness across all strains 
+```{r}
+meanF <- mean(df_R$mean)
+
+df_R_norm <- df_R %>%
+  mutate(R_n=R/meanF)
+```
+Plotting robustness with and without normalization with fitness mean across all samples
+```{r}
+df_long_R <- df_R_norm %>% 
+  gather(key="robustness", value="value", c("R", "R_n")) 
+# checking data distribution 
+ggplot(df_long_R, aes(x = robustness, y = value)) + 
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width = 0.1) +
+  theme_classic() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1),
+        text = element_text(size = 20), axis.text=element_text(size=20),
+        axis.title=element_text(size=20,face="bold"))
+#ggsave("RvsRn.png", width = 500, height = 300, unit = "mm", dpi = 300)
+
+```
+### Extracting top and last 10 strains based on the normalized robustness
+```{r}
+# Selecting the last 10 strains based on normalized Fano factor
+df_R_last_10 <- df_R_norm %>% 
+    arrange(R_n) %>%  # Arrange in ascending order based on R_n
+    slice(1:10)  # Select the last 10 rows
+
+# Selecting strains with R_n equal to 0
+df_R_zero <- df_R_norm[df_R_norm$R_n == 0,]  # Filter strains with R_n = 0
+
+# Selecting the top 10 strains with R_n not equal to 0, ordered by descending R_n
+df_R_top_10 <- filter(df_R_norm, R_n < 0) %>%
+  arrange(desc(R_n)) %>%
+  slice(1:10)  # Select the top 10 strains
+
+# Selecting the best and worst 10 strains based on Fitness (mean)
+df_F_high_10 <- filter(df_R_norm) %>%
+  arrange(desc(mean)) %>%
+  slice(1:10)  # Select the top 10 strains based on mean
+
+df_F_low_10 <- filter(df_R_norm) %>%
+  arrange(mean) %>%
+  slice(1:10)  # Select the bottom 10 strains based on mean
+
+```
+### Venn diagram with 10th and 90th percentiles
+```{r}
+# Isolating the 10th and 90th percentiles with best/worst fitness and best/worst robustness
+best_90_F <- df_R_norm %>%
+  filter(mean >= quantile(df_R_norm$mean, 0.90))  # Select strains with fitness in the top 10%
+
+best_90_R <- df_R_norm %>%
+  filter(R_n >= quantile(df_R_norm$R_n, 0.90))  # Select strains with robustness in the top 10%
+
+worst_10_F <- df_R_norm %>%
+  filter(mean <= quantile(df_R_norm$mean, 0.10))  # Select strains with fitness in the bottom 10%
+
+worst_10_R <- df_R_norm %>%
+  filter(R_n <= quantile(df_R_norm$R_n, 0.10))  # Select strains with robustness in the bottom 10%
+
+# Create a Venn diagram to visualize gene overlap between different categories
+venn <- list(High_Fitness = best_90_F$ID, High_Robustness = best_90_R$ID, Low_Fitness = worst_10_F$ID, Low_Robustness = worst_10_R$ID)
+ggvenn(venn, fill_color = c("#922A2B", "#E2C140", "#4775A5", "#5B9589"), text_size = 8, set_name_size = 10)
+
+# Save the Venn diagram as a PDF file (optional)
+# ggsave("venn_gene_overlap_quantile.pdf", width = 20, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+
+# Calculate the overlap between different sections of the Venn diagram
+overlap <- calculate.overlap(x = venn)
+
+# Extracting strains from the sections of interest
+hFhR <- df_R_norm[df_R_norm$ID %in% overlap[[6]],]  # High Fitness and High Robustness
+lFlR <- df_R_norm[df_R_norm$ID %in% overlap[[11]],]  # Low Fitness and Low Robustness
+hFlR <- df_R_norm[df_R_norm$ID %in% overlap[[8]],]   # High Fitness and Low Robustness
+hRlF <- df_R_norm[df_R_norm$ID %in% overlap[[9]],]   # High Robustness and Low Fitness
+
+```
+### Exploring correlations between robusntess and performance 
+```{r}
+# Create a scatter plot with a regression line, confidence interval, and correlation coefficient
+# using ggscatter from the ggpubr package
+ggscatter(df_R_norm, x = "R_n", y = "mean",
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "spearman",
+          xlab = "Robustness_normalized", ylab = "Fitness (colony size)")
+
+# Cut the data between -0.2 and 0 for improved visualization
+df_Rcorr <- filter(df_R_norm, R_n > -0.1) 
+
+# Create another scatter plot with a regression line, confidence interval, and correlation coefficient
+# for the subset of data where R_n is greater than -0.1
+ggscatter(df_Rcorr, x = "R_n", y = "mean", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Robustness_normalized", ylab = "Fitness (colony size)")
+
+```
+### Plotting robusntess and fitness to compare with experimental studies
+```{r}
+# Extract strains of interest from the fitness dataset
+filtered_strain <- c("qdr1", "met28", "mrp13", "hcm1", "gbp2", "rps14a", "rps14b", "oca4", "msh3", "bch1", "wwm1", "hlj1", "tir3", "sma2")
+fitness_strainsoi <- df_long %>%
+  filter(gene %in% filtered_strain) 
+
+# Ordering strains for plotting
+fitness_strainsoi <- fitness_strainsoi %>%
+  mutate(gene = factor(gene, levels = c("qdr1", "met28", "mrp13", "hcm1", "gbp2", "rps14a", "rps14b", "oca4", "msh3", "bch1", "wwm1", "hlj1", "tir3", "sma2")))
+
+p <- ggplot(data = fitness_strainsoi, 
+      aes(x = gene,
+          y = value, color = gene)
+    ) +
+    geom_point(size = 5) +
+    stat_summary(fun = mean, geom = 'point', shape = 20, size = 3, color = "black") +
+    scale_colour_manual(values = c("#922A2B", "#922A2B", "#922A2B", "#E2C140", "#E2C140", "#E2C140", "#E2C140", "#E2C140", "#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
+    bbc_style() +
+    guides(fill = "none") +
+    theme(strip.text = element_text(face = "bold"),
+          text = element_text(size = 15),
+          axis.text.x = element_text(size = 20, angle = 90, vjust = 0.5, hjust = 1))
+
+# Extract strains of interest from the robustness dataset
+rob_strainsoi <- df_long_R %>%
+  filter(gene %in% filtered_strain) %>%
+  filter(robustness == "R_n")
+
+#ordering strains
+rob_strainsoi <- rob_strainsoi %>%
+  mutate(gene = factor(gene, levels = c("qdr1", "met28", "mrp13", "hcm1", "gbp2", "rps14a", "rps14b", "oca4", "msh3", "bch1", "wwm1", "hlj1", "tir3", "sma2")))
+
+custom_breaks <- c(-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2)
+
+# Combine fitness and robustness plots
+p + geom_point(data = rob_strainsoi, aes(x = gene, y = value, color = gene), size = 5, shape = 17) +
+  scale_color_manual(values = c("#922A2B", "#922A2B", "#922A2B", "#E2C140", "#E2C140", "#E2C140", "#E2C140", "#E2C140", "#E2C140", "#4775A5", "#4775A5", "#4775A5", "#4775A5", "#4775A5")) +
+  bbc_style() +
+  scale_y_continuous(breaks = custom_breaks) +
+  guides(color = "none") +
+  theme(strip.text = element_text(face = "bold"),
+        text = element_text(size = 15),
+        axis.text.x = element_text(size = 20, angle = 90, vjust = 0.5, hjust = 1))
+
+#ggsave("FR_referencedataset.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+
+```
+
+### Exploring SAFE network regions 
+```{r}
+#loading dataset from Costanzo et.al 2021
+SAFE <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/raw data/Costanzo_et_al_Data_File_2_SMF_Functional_enrichment.xlsx", 
+    sheet = "SAFE")
+```
+Comparing the top robust strains with SAFE 
+```{r}
+# Find the intersection of genes between the best 90 R strains and the SAFE dataset
+topR_SAFE <- generics::intersect(best_90_R$gene, SAFE$`Gene/Allele`) 
+
+# Extract rows corresponding to the top genes from the SAFE dataset
+top_R_strains <- SAFE[SAFE$`Gene/Allele` %in% topR_SAFE,]
+
+# Working on a separate dataset for R0 and merging
+topR0_SAFE <- generics::intersect(df_R_zero$`gene`, SAFE$`Gene/Allele`)
+
+# Extract rows corresponding to the top R0 genes from the SAFE dataset
+top_R0_strains <- SAFE[SAFE$`Gene/Allele` %in% topR0_SAFE,]
+
+# Combine the datasets for the top R strains and top R0 strains, and rename the SAFE network region column
+top_R_strains <- top_R_strains %>%
+  rbind(top_R0_strains) %>%
+  rename(SAFE_group = `SAFE network region`)
+
+# Count the occurrences of each SAFE network region for the top R strains
+count_high_R_process <- top_R_strains %>%
+  group_by(SAFE_group) %>%
+  tally()
+
+```
+Comparing the worst robut strains with SAFE 
+```{r}
+# Find the intersection of genes between the worst 10 R strains and the SAFE dataset
+worstR_SAFE <- generics::intersect(worst_10_R$`gene`, SAFE$`Gene/Allele`)
+
+# Extract rows corresponding to the worst genes from the SAFE dataset
+worst_R_strains <- SAFE[SAFE$`Gene/Allele` %in% worstR_SAFE,] %>%
+  rename(SAFE_group = `SAFE network region`)
+
+# Count the occurrences of each SAFE network region for the worst R strains
+count_low_R_process <- worst_R_strains %>%
+  group_by(SAFE_group) %>%
+  tally()
+
+```
+Comparing the top fit strains with SAFE 
+```{r}
+# Find the intersection of genes between the best 90 F strains and the SAFE dataset
+topF_SAFE <- generics::intersect(best_90_F$gene, SAFE$`Gene/Allele`) 
+
+# Extract rows corresponding to the top genes from the SAFE dataset
+top_F_strains <- SAFE[SAFE$`Gene/Allele` %in% topF_SAFE,] %>%
+  rename(SAFE_group = `SAFE network region`)
+
+# Count the occurrences of each SAFE network region for the top F strains
+count_high_F_process <- top_F_strains %>%
+  group_by(SAFE_group) %>%
+  tally() 
+```
+Comparing the worst robust strains with SAFE 
+```{r}
+# Find the intersection of genes between the worst 10 F strains and the SAFE dataset
+worstF_SAFE <- generics::intersect(worst_10_F$`gene`, SAFE$`Gene/Allele`)
+
+# Extract rows corresponding to the worst genes from the SAFE dataset
+worst_F_strains <- SAFE[SAFE$`Gene/Allele` %in% worstF_SAFE,] %>%
+  rename(SAFE_group = `SAFE network region`)
+
+# Count the occurrences of each SAFE network region for the worst F strains
+count_low_F_process <- worst_F_strains %>%
+  group_by(SAFE_group) %>%
+  tally() 
+```
+
+### putting the four bubble plots together
+```{r}
+# Function to add an ID column and select the top 20 most represented SAFE regions
+add_ID <- function(df, ID) {
+  df %>%
+    arrange(desc(n)) %>%
+    slice(1:20) %>%
+    mutate(ID = ID)
+}
+
+# Extracting overly represented processes for different categories
+HR <- add_ID(count_high_R_process, "High Robustness")
+LR <- add_ID(count_low_F_process, "Low Robustness")
+HF <- add_ID(count_high_F_process, "High Fitness")
+LF <- add_ID(count_low_F_process, "Low Fitness")
+
+# Combine the data for plotting
+df_bubble <- HR %>%
+  rbind(LR) %>%
+  rbind(HF) %>%
+  rbind(LF)
+
+# Perform treemap layout
+packing_tot <- circleProgressiveLayout(df_bubble$n, sizetype = 'area')
+packing_tot$radius <- 0.95 * packing_tot$radius
+data_tot <- cbind(df_bubble, packing_tot)
+dat.gg_tot <- circleLayoutVertices(packing_tot, npoints = 50) 
+
+# Plot the treemap
+ggplot(data_tot, aes(area = n, fill = ID, label = SAFE_group, subgroup = ID)) +
+  geom_treemap(colour = "white", size = 2) +
+  geom_treemap_subgroup_border(colour = "white", size = 5) +
+  geom_treemap_text(grow = T, reflow = T, colour = "white") +
+  facet_wrap( ~ ID) +
+  scale_fill_manual(values = c("#922A2B", "#E2C140", "#4775A5", "#5B9589")) +
+  theme(legend.position = "bottom") +
+  labs(fill = "Group") +
+  bbc_style()
+
+# Save the treemap plot
+#ggsave("treemap_overall.pdf", width = 230, height = 175, unit = "mm", path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+
+```
+
+
