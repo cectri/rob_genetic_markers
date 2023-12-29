@@ -1,17 +1,18 @@
 ---
-title: "Fitness_analysis"
+title: "Fitness_analysis_LHPS"
 author: "Cecilia Trivellin"
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE} 
+#Set up the R environment
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
 ## Analysis of the genetic markers of microbial robustness
 
-This script is used to analyse fitness data of Saccharomyces cerevisiae strains. Each strain carries a deletion that should confer either lower or higher robusntess. The genes that have been deleted are the following: 
+This script is used to analyse fitness data of Saccharomyces cerevisiae strains. Each strain carries a deletion that should confer either lower or higher robustness. The genes that have been deleted are the following: 
 
 1)	CEN.PK113-7D (ΔQDR1)
 2)	CEN.PK113-7D (ΔGBP2)
@@ -27,27 +28,32 @@ This script is used to analyse fitness data of Saccharomyces cerevisiae strains.
 12)	CEN.PK113-7D (ΔBCH1)
 13)	CEN.PK113-7D (ΔTIR3) 
 14)	CEN.PK113-7D (ΔHLJ1) 
+Plus control strains: 
 15) CEN.PK113-7D parental
 16) Ethanol Red
 
-The strains above were grown in three different perturbation spaces. THe first one containing the following perturbations: 
+The genes chosen above followed the analysis made with the R_mutants.Rmd script. 
 
-Delft
-Delft_80NaCl
-Delft_50etoh
-Delft_25NaCl
-Delft-05VM
-Delft_100glu
-Dleft_100etoh
-Delft_5glu
-Delft_NB
-Delft_10LA
-Delft_HMF1
-Delft_FA2
-Delft_pH3
-Delft_AA2
-SCH100
-eSSH20
+The strains above were grown in three different perturbation spaces. The second one contained the following perturbations: 
+
+1) Delft
+2) Delft_80NaCl
+3) Delft_50etoh
+4) Delft_25NaCl
+5) Delft-05VM
+6) Delft_100glu
+7) Delft_100etoh
+8) Delft_5glu
+9) Delft_NB
+10) Delft_10LA
+11) Delft_HMF1
+12) Delft_FA2
+13) Delft_pH3
+14) Delft_AA2
+15) SCH100 (synthetic corn hydrolisate)
+16) SSH20 (synthetic spruce hydrolisate 20%)
+
+Corresponding to different perturbations present in the lignocellulose biomass fermentation into ethanol. For precise compositions check publication material and methods. 
 
 ### Loading libraries
 ```{r}
@@ -60,66 +66,72 @@ library(ggpubr)
 library(Cairo)
 ```
 
-## Importing data and summary 
+### Importing data and summary 
 ```{r}
-summary <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_LHFEPP.xlsx", 
+summary <- read_excel("~/your_directory/media_composition_LHFEPP.xlsx", 
     sheet = "summary") 
 
-strain <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_LHFEPP.xlsx", 
+head(summary)
+
+strain <- read_excel("~/your_directory/media_composition_LHFEPP.xlsx", 
     sheet = "strain") 
 
+head(strain)
 
-QDR1_GBP2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part1.xlsx", 
+QDR1_GBP2 <- read_excel("~/your_directory/LHPS_part1.xlsx", 
     sheet = "QDR1-GBP2_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part1.xlsx", 
+MRP13_WWM1 <- read_excel("~/your_directory/LHPS_part1.xlsx", 
     sheet = "MRP13-WWM1_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
 
-HCM1_OCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part1.xlsx", 
+HCM1_OCA4 <- read_excel("~/your_directory/LHPS_part1.xlsx", 
     sheet = "HCM1-OCA4_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-RPS14A_SMA2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part2.xlsx", 
+RPS14A_SMA2 <- read_excel("~/your_directory/LHPS_part2.xlsx", 
     sheet = "RPS14A-SMA2_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MSH3_RPS14B <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part2.xlsx", 
+MSH3_RPS14B <- read_excel("~/your_directory/LHPS_part2.xlsx", 
     sheet = "MSH3-RPS14B_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-BCH1_MET28 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part2.xlsx", 
+BCH1_MET28 <- read_excel("~/your_directory/LHPS_part2.xlsx", 
     sheet = "BCH1-MET28_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-HLJ1_ETRED <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part3.xlsx", 
+HLJ1_ETRED <- read_excel("~/your_directory/LHPS_part3.xlsx", 
     sheet = "HLJ1-ETRED_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-TIR3_CENPK <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_LHPS_2/LHPS_part3.xlsx", 
+TIR3_CENPK <- read_excel("~/your_directory/LHPS_part3.xlsx", 
     sheet = "TIR3-CENPK_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
+
+head(TIR3_CENPK)
 ```
-## Preprocessing growth data 
+### Preprocessing growth data 
 ```{r}
+# Define a function to merge and preprocess growth data
 ss_df <- function(df1, df2, df3, coln) {
   tmp <- inner_join(df1, df2, by="well")
   merge(tmp, df3[, c("well", coln)], by="well",all.x=TRUE)%>%
@@ -129,6 +141,8 @@ ss_df <- function(df1, df2, df3, coln) {
   mutate(stdev=sd(log_value)) 
   # filter(replicate == 1) 
 }
+
+# Apply ss_df function to preprocess growth data for all strains
 QDR1_GBP2 <- ss_df(QDR1_GBP2, summary, strain, "plate1") %>%
   rename(strain=plate1)
 MRP13_WWM1 <- ss_df(MRP13_WWM1, summary, strain, "plate2")%>%
@@ -146,6 +160,7 @@ HLJ1_ETRED <- ss_df(HLJ1_ETRED, summary, strain, "plate7")%>%
 TIR3_CENPK <- ss_df(TIR3_CENPK, summary, strain, "plate8")%>%
   rename(strain=plate8)
 
+# Combine the preprocessed data for all strains into a single dataframe
 df <- QDR1_GBP2 %>%
   rbind(MRP13_WWM1) %>%
   rbind(HCM1_OCA4) %>%
@@ -155,25 +170,38 @@ df <- QDR1_GBP2 %>%
   rbind(HLJ1_ETRED) %>%
   rbind(TIR3_CENPK) 
 
-saveRDS(df, file = "LHPS.rds")
+head(df)
+#saveRDS(df, file = "LHPS.rds")
 ```
-## Checking growth curves with plots
+### Growth curves analysis and plots
 ```{r}
 #names of the strains: "qdr1","gbp2","mrp13","wwm1","hcm1","oca4","rps14a","sma2","msh3","rps14b","bch1", "met28","hlj1","EthanolRed", "tir3","CEN.PK113-7D"
+
+# Convert 'replicate' to character type 
 df <- df %>%
   mutate(replicate= as.character(replicate)) 
+
+# plot the growth curves
 ggplot() +
   geom_point(data = subset(df, strain == c("hlj1","EthanolRed", "tir3","CEN.PK113-7D")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
 scale_colour_brewer(palette = "Spectral") +
   labs(y = "log_GV", x = "time(h)")+
   facet_wrap(~media)  +
-  bbc_style()
+  bbc_style()+
+  theme(legend.position = "none",
+        text = element_text(size = 10),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10, face = "bold"),
+        plot.title = element_text(size=7))
 
-#ggsave("part3_growtcurves_replicates.pdf",device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness_2")
+#ggsave("part3_growtcurves_replicates.pdf",device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
-## calculation of growth rate and lag phase 
+### Calculation of growth rate and lag phase 
 ```{r}
 df <- na.omit(df)
+
+# Fit spline models for each combination of 'strain', 'media', and 'replicate'
+
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate, data = df, spar = 0.7)
 #par(mfrow = c(6,6))
 #par(mar=c(1,1,1,1))
@@ -188,11 +216,14 @@ results$mumax <- ifelse(results$media == "Delft_100etoh" | results$media == "Del
 results$mumax <- ifelse((results$media == "Delft_80NaCl" | results$media == "Delft_FA2" | results$media == "SCH100") & results$strain == "met28", 0 , results$mumax)
 
 # now the mumax of remaining strains with r2 <= 0.99 and mumax != 0 is set to NA
- results <- results %>%
+results <- results %>%
    mutate(mumax = ifelse(r2 <= 0.99 & mumax != 0, NA, mumax))%>% #first I convert all the mumax values <0.99 to NA as the approximation of the function is not reiable 
   select(-`y0`)
+ 
+head(results)
 
- mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
+# Calculate the mean 'mumax' for the "CEN.PK113-7D" strain
+mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
 
 results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
@@ -218,17 +249,21 @@ p <- ggplot(data= results,
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-#ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness")
+#ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/your_directory/")
 ```
 
-## robusntess calculations 
+### Robusntess calculations (Trivellin et.al, 2022, Eq3)
 ```{r}
+# Calculate the mean 'mumax' and standard deviation for each 'strain'
+
 df_mean <- results %>%
   group_by(strain) %>% #calculating mean for each sample in the agar plate 
   mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
   mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
   filter(media == "Delft")
 mean_mumax <- mean(df_mean$mean)
+
+# Calculate robustness and normalized robustness for each 'strain' 
 
 df_R <- df_mean %>%
   mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
@@ -237,8 +272,10 @@ df_R <- df_mean %>%
   mutate(mean_R=mean(robustness_n, na.rm=TRUE)) %>% #mean of the 4 replicates per sample coming from the 4 different plates
   mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) %>% #standard error = standard deviation of the sampling distribution/sqrt n of samples
   filter(replicate == "1")
+
+head(df_R)
 ```
-## plotting robusntess 
+### Plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   ylim(-0.3,0.3)+
@@ -252,6 +289,6 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-#ggsave("FR_LHPS_1.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/LHPS_fitness_2")
+#ggsave("FR_LHPS_1.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
 

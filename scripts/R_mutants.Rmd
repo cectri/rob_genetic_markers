@@ -9,6 +9,10 @@ output: html_document
 ## Aim of the script
 The datasets used in this script were taken from Costanzo et.al. 2021 and used to calculate robustness for each mutant according to the formula in Trivellin et.al 2022.
 
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
 ### Load libraries
 ```{r, results='hide'}
 library(tidyverse)
@@ -26,7 +30,7 @@ library(treemapify)
 ### Load dataset
 ```{r}
 # Read Excel file into a dataframe named 'df'
-df <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/raw data/Costanzo_et_al_Data_File_1_Conditions_Strains_Fitness.xlsx", 
+df <- read_excel("~/your_directory/Costanzo_et_al_Data_File_1_Conditions_Strains_Fitness.xlsx", 
     sheet = "Mutant Fitness_Conditions") %>%
     # Rename the column "Strain ID" to "ID"
     rename("ID" = "Strain ID")
@@ -41,6 +45,8 @@ df <- df %>%
   separate(`Allele (Essential genes only)`, c("gene", "allele"), "-") %>%
   select(-`gene`) %>%
   unite('gene', `Gene Name`:`allele`, sep = "-", remove = TRUE, na.rm = TRUE)
+
+head(df)
 ```
 
 ## Explore fitness across conditions 
@@ -57,10 +63,11 @@ violin_box_plot <- ggplot(df_long, aes(x = condition, y = value)) +
   labs(title = "Fitness distribution", y = "normalized colony size", x = "growth condition") +
   stat_compare_means(method = "anova", label.y = 1.5) +  # Add ANOVA test comparison
   theme(legend.position = "none",
-        axis.text.x = element_text(size = 20, angle = 90, vjust = 0.5, hjust = 1),
-        text = element_text(size = 15),
-        axis.text = element_text(size = 20),
-        axis.title = element_text(size = 20, face = "bold"))
+        axis.text.x = element_text(size = 10, angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 11),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10, face = "bold"),
+        plot.title = element_text(size=10))
 
 # Calculate overall distribution using density estimation
 overall_density_dist <- density(df_long$value)
@@ -74,10 +81,11 @@ overall_distribution_plot <- ggplot(overall_density_df, aes(x = x, y = y)) +
   bbc_style() +  
   labs(title = "Overall Distribution", x = "normalized colony size", y = "Density") +
   theme(legend.position = "none",
-        axis.text.x = element_text(size = 20, angle = 90, vjust = 0.5, hjust = 1),
-        text = element_text(size = 15),
-        axis.text = element_text(size = 20),
-        axis.title = element_text(size = 20, face = "bold"))
+        axis.text.x = element_text(size = 10, angle = 90, vjust = 0.5, hjust = 1),
+        text = element_text(size = 10),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10, face = "bold"),
+        plot.title = element_text(size=10))
 
 # Combine the two plots using patchwork
 combined_plot <- violin_box_plot + overall_distribution_plot +
@@ -87,7 +95,7 @@ combined_plot <- violin_box_plot + overall_distribution_plot +
 print(combined_plot)
 
 # Save the combined plot as a PDF file
-# ggsave("fitness_distribution_overall.pdf", width = 17, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/analysis_costanzo")
+# ggsave("fitness_distribution_overall.pdf", width = 17, height = 10)
 
 ```
 ## Calculating Robustness
@@ -108,6 +116,8 @@ meanF <- mean(df_R$mean)
 
 df_R_norm <- df_R %>%
   mutate(R_n=R/meanF)
+
+head(df_R_norm)
 ```
 Plotting robustness with and without normalization with fitness mean across all samples
 ```{r}
@@ -167,10 +177,10 @@ worst_10_R <- df_R_norm %>%
 
 # Create a Venn diagram to visualize gene overlap between different categories
 venn <- list(High_Fitness = best_90_F$ID, High_Robustness = best_90_R$ID, Low_Fitness = worst_10_F$ID, Low_Robustness = worst_10_R$ID)
-ggvenn(venn, fill_color = c("#922A2B", "#E2C140", "#4775A5", "#5B9589"), text_size = 8, set_name_size = 10)
+ggvenn(venn, fill_color = c("#922A2B", "#E2C140", "#4775A5", "#5B9589"), text_size = 5, set_name_size = 5)
 
 # Save the Venn diagram as a PDF file (optional)
-# ggsave("venn_gene_overlap_quantile.pdf", width = 20, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+# ggsave("venn_gene_overlap_quantile.pdf", width = 20, height = 10)
 
 # Calculate the overlap between different sections of the Venn diagram
 overlap <- calculate.overlap(x = venn)
@@ -202,7 +212,9 @@ ggscatter(df_Rcorr, x = "R_n", y = "mean",
           xlab = "Robustness_normalized", ylab = "Fitness (colony size)")
 
 ```
+
 ### Plotting robusntess and fitness to compare with experimental studies
+
 ```{r}
 # Extract strains of interest from the fitness dataset
 filtered_strain <- c("qdr1", "met28", "mrp13", "hcm1", "gbp2", "rps14a", "rps14b", "oca4", "msh3", "bch1", "wwm1", "hlj1", "tir3", "sma2")
@@ -247,15 +259,17 @@ p + geom_point(data = rob_strainsoi, aes(x = gene, y = value, color = gene), siz
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle = 90, vjust = 0.5, hjust = 1))
 
-#ggsave("FR_referencedataset.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+#ggsave("FR_referencedataset.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 
 ```
 
 ### Exploring SAFE network regions 
 ```{r}
 #loading dataset from Costanzo et.al 2021
-SAFE <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/raw data/Costanzo_et_al_Data_File_2_SMF_Functional_enrichment.xlsx", 
+SAFE <- read_excel("~/your_directory/Costanzo_et_al_Data_File_2_SMF_Functional_enrichment.xlsx", 
     sheet = "SAFE")
+
+head(SAFE)
 ```
 Comparing the top robust strains with SAFE 
 ```{r}
@@ -326,7 +340,7 @@ count_low_F_process <- worst_F_strains %>%
   tally() 
 ```
 
-### putting the four bubble plots together
+Overall SAFE regions analysis
 ```{r}
 # Function to add an ID column and select the top 20 most represented SAFE regions
 add_ID <- function(df, ID) {
@@ -366,7 +380,7 @@ ggplot(data_tot, aes(area = n, fill = ID, label = SAFE_group, subgroup = ID)) +
   bbc_style()
 
 # Save the treemap plot
-#ggsave("treemap_overall.pdf", width = 230, height = 175, unit = "mm", path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots")
+#ggsave("treemap_overall.pdf", width = 230, height = 175, unit = "mm", path = "~/your_directory/")
 
 ```
 

@@ -1,14 +1,17 @@
 ---
-title: "FR_overall"
+title: "FR_overall_BPS+LHPS+CPS"
 author: "Cecilia Trivellin"
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE} 
+#Set up the R environment
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
-## Script to put all the three perturbation spaces together to check overall fitness and robusntess 
+
+## Analysis of fitness and robusntess of all three perturbation spaces 
+(see other scripts and material and methods in publication) 
 
 ### Loading libraries
 ```{r}
@@ -24,11 +27,11 @@ library(Cairo)
 
 ### Importing data
 ```{r}
-LHPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/LHPS.rds") %>%
+LHPS_df <- readRDS("~/your_directory/LHPS.rds") %>%
   mutate(p_space="LHPS")
-BPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/BPS.rds") %>%
+BPS_df <- readRDS("~/your_directory/BPS.rds") %>%
   mutate(p_space="BPS")
-CPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/CPS.rds") %>%
+CPS_df <- readRDS("~/your_directory/CPS.rds") %>%
   mutate(p_space="CPS")
 ```
 
@@ -37,17 +40,21 @@ CPS_df <- readRDS("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Dat
 df <- LHPS_df %>%
   rbind(BPS_df) %>%
   rbind(CPS_df)
+
+head(df)
 ```
 
-### Calculating growth rates
+### Calculating max. specific growth rates
 ```{r}
 df <- na.omit(df) #because I was getting an error of missing values insmooth splines
-many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate + p_space,
-                                data = df, spar = 0.7)
+# Fit spline models for each combination of 'strain', 'media', and 'replicate'
+many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate + p_space, data = df, spar = 0.7)
+
 results <- results(many_spline_fits) 
 # par(mfrow = c(6,6))
 # par(mar=c(1,1,1,1))
 # plot(many_spline_fits)
+
 #data frame is created with the results coming from all_splines function
 #based on the single environments set to zero the strains that did not grow (as done in the single scripts)
 #LHPS
@@ -70,12 +77,15 @@ results$mumax <- ifelse((results$media == "Delft_25NaCl" | results$media == "Del
   select(-`y0`)
 ```
  
- ### Visualizing overall results:
+### Visualizing overall results
 ```{r}
 results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
 
+head(results)
+
+# Calculate the mean 'mumax' for the "CEN.PK113-7D" strain
 mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
 
 p <- ggplot(data= results, 
@@ -98,7 +108,7 @@ p <- ggplot(data= results,
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 ```
 
-### Robusntess calculations 
+### Robusntess calculations (Trivellin et.al.,2022)
 ```{r}
 df_mean <- results %>%
   group_by(strain) %>% #calculating mean for each sample in the agar plate 
@@ -114,6 +124,8 @@ df_R <- df_mean %>%
   mutate(mean_R=mean(robustness_n, na.rm=TRUE)) %>% #mean of the 4 replicates per sample coming from the 4 different plates
   mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) %>% #standard error = standard deviation of the sampling distribution/sqrt n of samples
   filter(replicate == "1")
+
+head(df_R)
 ```
 ### Plotting robusntess 
 ```{r}
@@ -128,10 +140,11 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-#ggsave("FR_overall.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+#ggsave("FR_overall.pdf", device= cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
-## checking mumax in all perturbations to see which strain stands out 
+Checking mumax in all perturbations to see which strain stands out 
 ```{r}
+# copnverting 'media' to factor to order perturbations
 results <- results %>%
   mutate(media = factor(media,levels=c("Delft", "Delft_5glu", "Delft_100glu","Delft_NB", "Delft_pH3", "Delft-05VM", "Delft_25NaCl", "Delft_80NaCl",  "Delft_50etoh",  "Delft_100etoh", "Delft_AA2", "Delft_FA2",  "Delft_10LA", "Delft_HMF1", "eSSH20", "SCH100", "BPS_1", "BPS_2",  "BPS_3", "BPS_4", "BPS_5", "BPS_6", "BPS_7", "BPS_8", "BPS_9", "BPS_10", "BPS_11", "BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16", "CPS_1", "CPS_2",  "CPS_3", "CPS_4", "CPS_5", "CPS_6", "CPS_7", "CPS_8", "CPS_9", "CPS_10", "CPS_11", "CPS_12", "CPS_13", "CPS_14", "CPS_15", "CPS_16"))) %>%
   mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
@@ -141,12 +154,12 @@ ggplot(results, aes(x = media, y = strain)) +
   scale_fill_gradientn(colours = c("#4775A5", "#7acfbd","#E9C46A", "#922A2B"),
                        na.value = "#C9C9C9") +
   coord_fixed(ratio = 1)+
-  theme(axis.text = element_text(size = 20),
-        axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
+  theme(axis.text = element_text(size = 10),
+        axis.text.x = element_text(size = 10, angle=90, vjust = 0.5,hjust = 1))
 
-#ggsave("fitness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+#ggsave("fitness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
-### robusntess overall 
+### Robusntess overall 
 ```{r}
 results <- results %>%
   mutate(p_space = case_when(
@@ -156,11 +169,12 @@ results <- results %>%
   ))
 
 df_mean_2 <- results %>%
-  group_by(strain, p_space) %>% #calculating mean for each sample in the agar plate 
+  group_by(strain, p_space) %>% #calculating mean for each sample 
   mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
   mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
   filter((media == "CPS_1" | media == "BPS_1" | media == "Delft")& replicate==1)
 
+# calculating mean for each perturbation space
 mean_mumax_BPS <- mean(df_mean_2$mean[df_mean_2$p_space == "BPS"])
 mean_mumax_CPS <- mean(df_mean_2$mean[df_mean_2$p_space == "CPS"])
 mean_mumax_LHPS <- mean(df_mean_2$mean[df_mean_2$p_space == "LHPS"])
@@ -172,6 +186,8 @@ df_R_2 <- df_mean_2 %>%
     p_space %in% "LHPS" ~ mean_mumax_LHPS)) %>%
   mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
   mutate(robustness_n=robustness/mean_p_space, na.rm=TRUE) #calculating normalized robustness with the mean of all strains and all experiment
+
+head(df_R_2)
 ```
 Plotting as heatmap
 ```{r}
@@ -190,7 +206,7 @@ ggplot(try, aes(x = p_space, y = strain)) +
   theme(axis.text = element_text(size = 20),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-ggsave("robustness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/overall_new")
+#ggsave("robustness_heatmap.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
 
 

@@ -1,17 +1,18 @@
 ---
-title: "Fitness_analysis"
+title: "Fitness_analysis_CPS"
 author: "Cecilia Trivellin"
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE} 
+#Set up the R environment
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
 ## Analysis of the genetic markers of microbial robustness
 
-This script is used to analyse fitness data of Saccharomyces cerevisiae strains. Each strain carries a deletion that should confer either lower or higher robusntess. The genes that have been deleted are the following: 
+This script is used to analyse fitness data of Saccharomyces cerevisiae strains. Each strain carries a deletion that should confer either lower or higher robustness. The genes that have been deleted are the following: 
 
 1)	CEN.PK113-7D (ΔQDR1)
 2)	CEN.PK113-7D (ΔGBP2)
@@ -30,11 +31,13 @@ This script is used to analyse fitness data of Saccharomyces cerevisiae strains.
 15) CEN.PK113-7D parental
 16) Ethanol Red
 
-The strains above were grown in three different perturbation spaces. THe first one containing the following perturbations: 
-Different combinations of sugars and anitfungal chemicals 
+The genes chosen above followed the analysis made with the R_mutants.Rmd script. 
+The strains above were grown in three different perturbation spaces. The first one containing the following perturbations: 
+Different combinations of sugars and anitfungal chemicals (similar to the conditions used in the paper of Costanzo et.al, 2021)
 
 ### Loading libraries
 ```{r}
+# Load necessary R libraries for data analysis and visualization
 library(readxl)
 library(tidyverse)
 library(deSolve)
@@ -45,74 +48,85 @@ library(ggpubr)
 library(Cairo)
 ```
 
-## Importing data and summary 
+### Importing data and summary 
 ```{r}
-summary <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_CPS.xlsx", 
+# Read summary data from an Excel file for media composition
+summary <- read_excel("~/your_directory/media_composition_CPS.xlsx", 
     sheet = "summary") 
 
-strain <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_CPS.xlsx", 
+head(summary)
+# Read strain data from an Excel file 
+strain <- read_excel("~/your_directory/media_composition_CPS.xlsx", 
     sheet = "strain") 
 
-QDR1_GBP2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part1_CPS.xlsx", 
+head(strain)
+
+# Read and preprocess growth data for all the strains
+QDR1_GBP2 <- read_excel("~/your_directory/part1_CPS.xlsx", 
     sheet = "QDR1-GBP2_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part1_CPS.xlsx", 
+MRP13_WWM1 <- read_excel("~your_directory/part1_CPS.xlsx", 
     sheet = "MRP13-WWM1_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
 
-HCM1_SMA2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part1_CPS.xlsx", 
+HCM1_SMA2 <- read_excel("~/your_directory/part1_CPS.xlsx", 
     sheet = "HCM1-SMA2_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-RPS14A_OCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part2_CPS.xlsx", 
+RPS14A_OCA4 <- read_excel("~/your_directory/part2_CPS.xlsx", 
     sheet = "RPS14A-OCA4_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MSH3_RPS14B <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part2_CPS.xlsx", 
+MSH3_RPS14B <- read_excel("~/your_directory/part2_CPS.xlsx", 
     sheet = "MSH3-RPS14B_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-BCH1_MET28 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part2_CPS.xlsx", 
+BCH1_MET28 <- read_excel("~/your_directory/part2_CPS.xlsx", 
     sheet = "BCH1-MET28_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-HLJ1_TIR3 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part3_CPS.xlsx", 
+HLJ1_TIR3 <- read_excel("~/your_directory/part3_CPS.xlsx", 
     sheet = "HLJ1-TIR3_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-CENPK_ETRED <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_CPS/part3_CPS.xlsx", 
+CENPK_ETRED <- read_excel("~/your_directory/part3_CPS.xlsx", 
     sheet = "CENPK-ETRED_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
+
+head(CENPK_ETRED)
 ```
-## Preprocessing growth data 
+### Preprocessing growth data 
 ```{r}
+# Define a function to merge and preprocess growth data
 ss_df <- function(df1, df2, df3, coln) {
-  tmp <- inner_join(df1, df2, by="well")
-  merge(tmp, df3[, c("well", coln)], by="well",all.x=TRUE)%>%
+  tmp <- inner_join(df1, df2, by="well")   # Inner join df1 and df2 based on the "well" column
+  merge(tmp, df3[, c("well", coln)], by="well",all.x=TRUE)%>% # Merge tmp with df3, keeping all rows from tmp (left join) 
   group_by(media, timeh) %>%
   mutate(log_value=log(value)) %>%
   mutate(mean=mean(log_value)) %>%
   mutate(stdev=sd(log_value)) 
   # filter(replicate == 1) 
 }
+# Apply ss_df function to preprocess growth data for all strains
+
 QDR1_GBP2 <- ss_df(QDR1_GBP2, summary, strain, "plate1") %>%
   rename(strain=plate1)
 MRP13_WWM1 <- ss_df(MRP13_WWM1, summary, strain, "plate2")%>%
@@ -130,6 +144,8 @@ HLJ1_TIR3 <- ss_df(HLJ1_TIR3, summary, strain, "plate7")%>%
 CENPK_ETRED <- ss_df(CENPK_ETRED, summary, strain, "plate8")%>%
   rename(strain=plate8)
 
+# Combine the preprocessed data for all strains into a single dataframe
+
 df <- QDR1_GBP2 %>%
   rbind(MRP13_WWM1) %>%
   rbind(HCM1_SMA2) %>%
@@ -139,27 +155,40 @@ df <- QDR1_GBP2 %>%
   rbind(HLJ1_TIR3) %>%
   rbind(CENPK_ETRED) 
 
-saveRDS(df, file = "CPS.rds")
+head(df)
+#saveRDS(df, file = "CPS.rds")
 ```
-## Checking growth curves with plots
+### Growth curves analysis and plots
 ```{r}
 #names of the strains: "qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"
+
+# Convert 'replicate' to character type and 'media' to a factor with specified levels
 df <- df %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(media = factor(media,levels=c("CPS_1","CPS_2","CPS_3","CPS_4","CPS_5","CPS_6","CPS_7","CPS_8","CPS_9", "CPS_10", "CPS_11","CPS_12", "CPS_13", "CPS_14", "CPS_15", "CPS_16")))
+
+# plot the growth curves
 ggplot() +
   geom_point(data = subset(df, strain == c("tir3", "sma2","CEN.PK113-7D", "EthanolRed")), size = 0.7, aes(y=log_value, x=timeh, colour=strain, shape=replicate)) +
   # xlim(0,25)+
 scale_colour_brewer(palette = "Spectral") +
   labs(title= "Growth curves in Costanzo Perturbation Space", y = "log_GV", x = "time(h)")+
   facet_wrap(~media)  +
-  bbc_style()
+  bbc_style() + 
+  theme(legend.position = "none",
+        text = element_text(size = 10),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10, face = "bold"),
+        plot.title = element_text(size=10))
 
-#ggsave("part3_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("part3_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
-## calculation of growth rate and lag phase 
+### Calculation of max. specific growth rate and lag phase 
 ```{r}
-df <- na.omit(df) #because I was getting an error of missing values insmooth splines
+df <- na.omit(df) #because I was getting an error of missing values in smooth splines
+
+# Fit spline models for each combination of 'strain', 'media', and 'replicate'
+
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate,
                                 data = df, spar = 0.7)
 # par(mfrow = c(6,6))
@@ -185,8 +214,12 @@ results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
 
+head(results)
+
+# Calculate the mean 'mumax' for the "CEN.PK113-7D" strain
 mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
 
+# Create a ggplot for visualizing 'mumax' by 'strain'
 
 p <- ggplot(data= results, 
       aes(x = strain,
@@ -207,18 +240,22 @@ p <- ggplot(data= results,
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-# ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+# ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/your_directory/")
 ```
 
-## robusntess calculations 
+### Robusntess calculations (Trivellin et.al, 2022, Eq3)
 ```{r}
+
+# Calculate the mean 'mumax' and standard deviation for each 'strain'
 df_mean <- results %>%
   group_by(strain) %>% #calculating mean for each sample in the agar plate 
   mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
   mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
   filter(media == "CPS_1")
+# Calculate the overall mean 'mumax' for normalization
 mean_mumax <- mean(df_mean$mean) 
 
+# Calculate robustness and normalized robustness for each 'strain' 
 df_R <- df_mean %>%
   mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
   mutate(robustness_n=robustness/mean_mumax, na.rm=TRUE) %>%#calculating normalized robustness with the mean of all strains and all experiments
@@ -226,8 +263,10 @@ df_R <- df_mean %>%
   mutate(mean_R=mean(robustness_n, na.rm=TRUE)) %>% #mean of the 4 replicates per sample coming from the 4 different plates
   mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) %>% #standard error = standard deviation of the sampling distribution/sqrt n of samples
   filter(replicate == "1")
+
+head(df_R)
 ```
-## plotting robusntess 
+### Plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   ylim(-0.23,0.3)+
@@ -241,15 +280,17 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-#ggsave("FR_CPS_1.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("FR_CPS_1.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
 
-#Extract perturbation space form Costanzo paper
+Extract perturbations corresponding to the one used in the Costanzo paper
 ```{r}
-# filter out the pertubations that were exaclty the same as the Costanzo paper 
+# filter out the perturbations that were exactly the same as the Costanzo paper 
 filtered_categories <- c("CPS_4","CPS_5","CPS_6", "CPS_7","CPS_9","CPS_12","CPS_13","CPS_15")
 costanzo <- results %>%
   filter(media %in% filtered_categories) 
+
+# Calculate mean mumax across all media for the reduced CPS space (CPR)
 
 mean_mumax_CENPK_costanzo <- mean(filter(costanzo, strain == "CEN.PK113-7D")$mumax)
 
@@ -273,9 +314,9 @@ P <- ggplot(data= costanzo,
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-# ggsave("mumax_distribution_rawdata_costanzo.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+# ggsave("mumax_distribution_rawdata_costanzo.pdf", width = 15, height = 10, path = "~/your_directory/")
 ```
-Robusntess only with costanzo perturbations 
+Robustness only with Costanzo perturbations 
 ```{r}
 df_mean_costanzo <- costanzo %>%
   group_by(strain) %>% #calculating mean for each sample in the agar plate 
@@ -292,7 +333,7 @@ df_R_costanzo <- df_mean_costanzo %>%
   mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) %>% #standard error = standard deviation of the sampling distribution/sqrt n of samples
   filter(replicate == "1")
 ```
-## plotting robusntess only with Costanzo perturbations
+### Plotting robusntess only with Costanzo perturbations
 ```{r}
 P +  geom_point(data=df_R_costanzo, aes(x=strain, y=robustness_n, color=strain),size=5)+
   ylim(-0.26,0.3)+
@@ -305,5 +346,5 @@ P +  geom_point(data=df_R_costanzo, aes(x=strain, y=robustness_n, color=strain),
   theme(strip.text = element_text(face="bold"),
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
-#ggsave("FR_CPS_1_onlycostanzo.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/CPS_fitness")
+#ggsave("FR_CPS_1_onlycostanzo.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```

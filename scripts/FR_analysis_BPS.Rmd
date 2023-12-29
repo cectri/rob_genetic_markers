@@ -1,17 +1,18 @@
 ---
-title: "Fitness_analysis"
+title: "Fitness_analysis_BPS"
 author: "Cecilia Trivellin"
 date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE} 
+#Set up the R environment
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
 ## Analysis of the genetic markers of microbial robustness
 
-This script is used to analyse fitness data of Saccharomyces cerevisiae strains. Each strain carries a deletion that should confer either lower or higher robusntess. The genes that have been deleted are the following: 
+This script is used to analyse fitness data of Saccharomyces cerevisiae strains. Each strain carries a deletion that should confer either lower or higher robustness. The genes that have been deleted are the following: 
 
 1)	CEN.PK113-7D (ΔQDR1)
 2)	CEN.PK113-7D (ΔGBP2)
@@ -27,11 +28,14 @@ This script is used to analyse fitness data of Saccharomyces cerevisiae strains.
 12)	CEN.PK113-7D (ΔBCH1)
 13)	CEN.PK113-7D (ΔTIR3) 
 14)	CEN.PK113-7D (ΔHLJ1) 
+- plus two control strains
 15) CEN.PK113-7D parental
 16) Ethanol Red
 
-The strains above were grown in three different perturbation spaces. THe first one containing the following perturbations: 
-Four different malts + 12 hops + 6 aromas and 2 finnings
+The genes chosen above followed the analysis made with the R_mutants.Rmd script. 
+
+The strains above were grown in three different perturbation spaces. The last one contained the following: 
+16 perturbations containing different combinations of: four different malts + 12 hops + 6 aromas and 2 finnings
 
 ### Loading libraries
 ```{r}
@@ -41,68 +45,74 @@ library(deSolve)
 library(lattice)
 library(growthrates)
 library(bbplot)
+library(ggpubr)
 library(Cairo)
 ```
 
-## Importing data and summary 
+### Importing data and summary 
 ```{r}
-summary <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_BPPP.xlsx", 
+summary <- read_excel("~/your_directory/media_composition_BPPP.xlsx", 
     sheet = "summary") 
+head(summary)
 
-strain <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/media_composition_BPPP.xlsx", 
+strain <- read_excel("~/your_directory/media_composition_BPPP.xlsx", 
     sheet = "strain") 
+head(strain)
 
-QDR1_GBP2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part1_BPPP.xlsx", 
+QDR1_GBP2 <- read_excel("~/your_directory/part1_BPPP.xlsx", 
     sheet = "QDR1-GBP2_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MRP13_WWM1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part1_BPPP.xlsx", 
+MRP13_WWM1 <- read_excel("~/your_directory/part1_BPPP.xlsx", 
     sheet = "MRP13-WWM1_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
 
-HCM1_SMA2 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part2_BPPP.xlsx", 
+HCM1_SMA2 <- read_excel("~/your_directory/part2_BPPP.xlsx", 
     sheet = "HCM1-SMA2_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-RPS14A_OCA4 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part2_BPPP.xlsx", 
+RPS14A_OCA4 <- read_excel("~/your_directory/part2_BPPP.xlsx", 
     sheet = "RPS14A-OCA4_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-MSH3_RPS14B <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part3_BPPP.xlsx", 
+MSH3_RPS14B <- read_excel("~/your_directory/part3_BPPP.xlsx", 
     sheet = "MSH3-RPS14B_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-BCH1_MET28 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part3_BPPP.xlsx", 
+BCH1_MET28 <- read_excel("~/your_directory/part3_BPPP.xlsx", 
     sheet = "BCH1-MET28_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-TIR3_HLJ1 <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part4_BPPP.xlsx", 
+TIR3_HLJ1 <- read_excel("~/your_directory/part4_BPPP.xlsx", 
     sheet = "TIR3-HLJ1_GV")%>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
 
-CENPK_ETRED <- read_excel("~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/Fitness assays/prj_rob_genes_BPPP/part4_BPPP.xlsx", 
+CENPK_ETRED <- read_excel("~/your_directory/part4_BPPP.xlsx", 
     sheet = "CENPK-ETRED_GV") %>%
     mutate(timeh = `time`/60) %>%
     select(-`time`)%>%
     gather("well", "value", -timeh) 
+
+head(CENPK_ETRED)
 ```
-## Preprocessing growth data 
+### Preprocessing growth data 
 ```{r}
+# Define a function to merge and preprocess growth data
 ss_df <- function(df1, df2, df3, coln) {
   tmp <- inner_join(df1, df2, by="well")
   merge(tmp, df3[, c("well", coln)], by="well",all.x=TRUE)%>%
@@ -112,6 +122,8 @@ ss_df <- function(df1, df2, df3, coln) {
   mutate(stdev=sd(log_value)) 
   # filter(replicate == 1) 
 }
+
+# Apply ss_df function to preprocess growth data for all strains
 QDR1_GBP2 <- ss_df(QDR1_GBP2, summary, strain, "plate1") %>%
   rename(strain=plate1)
 MRP13_WWM1 <- ss_df(MRP13_WWM1, summary, strain, "plate2")%>%
@@ -128,7 +140,7 @@ TIR3_HLJ1 <- ss_df(TIR3_HLJ1, summary, strain, "plate7")%>%
   rename(strain=plate7)
 CENPK_ETRED <- ss_df(CENPK_ETRED, summary, strain, "plate8")%>%
   rename(strain=plate8)
-
+# Combine the preprocessed data for all strains into a single dataframe
 df <- QDR1_GBP2 %>%
   rbind(MRP13_WWM1) %>%
   rbind(HCM1_SMA2) %>%
@@ -138,11 +150,14 @@ df <- QDR1_GBP2 %>%
   rbind(TIR3_HLJ1) %>%
   rbind(CENPK_ETRED) 
 
-saveRDS(df, file = "BPS.rds")
+head(df)
+#saveRDS(df, file = "BPS.rds")
 ```
-## Checking growth curves with plots
+### Growth curves analysis and plots
 ```{r}
 #names of the strains: "qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2", "CEN.PK113-7D", "EthanolRed"
+
+# Convert 'replicate' to character type and 'media' into factors
 df <- df %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(media = factor(media,levels=c("BPS_1","BPS_2","BPS_3","BPS_4","BPS_5","BPS_6","BPS_7","BPS_8","BPS_9", "BPS_10", "BPS_11","BPS_12", "BPS_13", "BPS_14", "BPS_15", "BPS_16")))
@@ -153,13 +168,19 @@ ggplot() +
 scale_colour_brewer(palette = "Spectral") +
   labs(title= "Growth curves in Beer Perturbation Space", y = "log_GV", x = "time(h)")+
   facet_wrap(~media)  +
-  bbc_style()
+  bbc_style()+
+  theme(legend.position = "none",
+        text = element_text(size = 10),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size = 10, face = "bold"),
+        plot.title = element_text(size=7))
 
-#ggsave("part4_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/BPS_fitness")
+#ggsave("part4_growtcurves.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
-## calculation of growth rate and lag phase 
+### Calculation of growth rate and lag phase 
 ```{r}
 df <- na.omit(df) #because I was getting an error of missing values insmooth splines
+# Fit spline models for each combination of 'strain', 'media', and 'replicate'
 many_spline_fits <- all_splines(value ~ timeh | strain + media + replicate,
                                 data = df, spar = 0.7)
 # par(mfrow = c(6,6))
@@ -175,6 +196,8 @@ results <- results %>%
   mutate(replicate= as.character(replicate)) %>%
   mutate(strain = factor(strain,levels=c("CEN.PK113-7D","EthanolRed","qdr1","met28","mrp13","hcm1","gbp2","rps14a","rps14b","oca4","msh3", "bch1", "wwm1","hlj1", "tir3", "sma2"))) 
  
+head(results)
+# Calculate the mean 'mumax' for the "CEN.PK113-7D" strain
 mean_mumax_CENPK <- mean(filter(results, strain == "CEN.PK113-7D")$mumax)
 
 p <- ggplot(data= results, 
@@ -196,17 +219,18 @@ p <- ggplot(data= results,
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-#ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/BPS_fitness")
+#ggsave("mumax_distribution_rawdata.pdf", width = 15, height = 10, path = "~/your_directory/")
 ```
-
-## robusntess calculations 
+### Robusntess calculations (Trivellin et.al., 2022)
 ```{r}
+# Calculate the mean 'mumax' and standard deviation for each 'strain'
 df_mean <- results %>%
   group_by(strain) %>% #calculating mean for each sample in the agar plate 
   mutate(mean=mean(mumax,  na.rm=TRUE)) %>%
   mutate(stdev=sd(mumax,  na.rm=TRUE)) %>%
   filter(media == "BPS_1")
 mean_mumax <- mean(df_mean$mean) 
+# Calculate robustness and normalized robustness for each 'strain' 
 
 df_R <- df_mean %>%
   mutate(robustness=-stdev^2/mean, na.rm=TRUE)%>%
@@ -215,8 +239,10 @@ df_R <- df_mean %>%
   mutate(mean_R=mean(robustness_n, na.rm=TRUE)) %>% #mean of the 4 replicates per sample coming from the 4 different plates
   mutate(sem_R=sd(robustness_n)/sqrt(3),na.rm=TRUE) %>% #standard error = standard deviation of the sampling distribution/sqrt n of samples
   filter(replicate == "1")
+
+head(df_R)
 ```
-## plotting robusntess 
+### Plotting robusntess 
 ```{r}
 p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
   ylim(-0.2,0.2)+
@@ -230,6 +256,6 @@ p + geom_point(data=df_R, aes(x=strain, y=robustness_n, color=strain),size=5)+
         text = element_text(size = 15),
         axis.text.x = element_text(size = 20, angle=90, vjust = 0.5,hjust = 1))
 
-#ggsave("FR_BPS_2.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/Library/CloudStorage/OneDrive-Chalmers/PhD/Experimental_Data/Robusntess application on existing dataset/R_scripts/genetic_markers_robustness/plots/BPS_fitness")
+#ggsave("FR_BPS_2.pdf", device=cairo_pdf, width = 15, height = 10, path = "~/your_directory/")
 ```
 
