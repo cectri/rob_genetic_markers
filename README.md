@@ -1,7 +1,7 @@
 # Robustness quantification of a mutant library screen revealed key genetic markers in yeast 
 ##### This repository contains data as well as scripts used for the identification of genetic markers of microbial robustness in yeast.
 
-**NOTE**: The main findings of the study are summarized below and in a study which is now submitted for peer-review.
+**NOTE**: The main findings of the study are summarized in the published study: [Robustness quantification of a mutant library screen revealed key genetic markers in yeast](https://microbialcellfactories.biomedcentral.com/articles/10.1186/s12934-024-02490-2)
 We applied a previously published methodology [Quantification of microbial robustness in yeast](https://pubs.acs.org/doi/10.1021/acssynbio.1c00615) to more than 4000 yeast mutants from a genomic screen published by Michael Costanzo and colleagues in 2021 [Environmental robustness of the global yeast genetic interaction network](https://www.science.org/doi/10.1126/science.abf8424). The data analysis revealed potential genetic and metabolic targets of microbial robustness. To validate the analysis we replicated 14 non-essential gene deletions in **Saccharomyces cerevisiae** CEN.PK113-7D and cultivated the mutants in three distinct perturbation spaces resembling industrial bioprocesses. 
 
 Main findings of the study: 
